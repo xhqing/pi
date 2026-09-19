@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.86.0] - 2026-09-19
+
 ### Breaking Changes
 
 - `user_bash` now fails closed: errors or invalid defined results abort the command without invoking later handlers or executing locally. Return `undefined` to continue propagation; otherwise return `{ operations }` or `{ result }` ([#9068](https://github.com/earendil-works/pi/issues/9068)).

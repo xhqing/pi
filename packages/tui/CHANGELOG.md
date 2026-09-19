@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.86.0] - 2026-09-19
+
 ### Added
 
 - Added `cursorStyle` (`"block"` | `"hardware"`) to renderers: `"hardware"` skips the editor's reverse-video block caret while focused and always shows the hardware cursor at the `CURSOR_MARKER` position, so the terminal's native caret styling is used; the block remains as the unfocused fallback ([#1](https://github.com/xhqing/pi/issues/1)).
