@@ -3,6 +3,7 @@ import { getSupportedThinkingLevels, type Model, type Transport } from "@earendi
 import {
 	type Component,
 	Container,
+	type CursorStyle,
 	getCapabilities,
 	type ScrollViewScrollbar,
 	type SelectItem,
@@ -74,6 +75,7 @@ export interface SettingsConfig {
 	doubleEscapeAction: "fork" | "tree" | "none";
 	treeFilterMode: "default" | "no-tools" | "user-only" | "labeled-only" | "all";
 	showHardwareCursor: boolean;
+	cursorStyle: CursorStyle;
 	editorPaddingX: number;
 	outputPad: 0 | 1;
 	autocompleteMaxVisible: number;
@@ -111,6 +113,7 @@ export interface SettingsCallbacks {
 	onDoubleEscapeActionChange: (action: "fork" | "tree" | "none") => void;
 	onTreeFilterModeChange: (mode: "default" | "no-tools" | "user-only" | "labeled-only" | "all") => void;
 	onShowHardwareCursorChange: (enabled: boolean) => void;
+	onCursorStyleChange: (style: CursorStyle) => void;
 	onEditorPaddingXChange: (padding: number) => void;
 	onOutputPadChange: (padding: 0 | 1) => void;
 	onAutocompleteMaxVisibleChange: (maxVisible: number) => void;
@@ -770,9 +773,19 @@ export class SettingsSelectorComponent extends Container {
 			values: ["true", "false"],
 		});
 
-		// Editor padding toggle (insert after show-hardware-cursor)
+		// Cursor style toggle (insert after show-hardware-cursor)
 		const hardwareCursorIndex = items.findIndex((item) => item.id === "show-hardware-cursor");
 		items.splice(hardwareCursorIndex + 1, 0, {
+			id: "cursor-style",
+			label: "Cursor style",
+			description: "Use the terminal's native cursor as the editor caret instead of the block caret",
+			currentValue: config.cursorStyle,
+			values: ["block", "hardware"],
+		});
+
+		// Editor padding toggle (insert after cursor-style)
+		const cursorStyleIndex = items.findIndex((item) => item.id === "cursor-style");
+		items.splice(cursorStyleIndex + 1, 0, {
 			id: "editor-padding",
 			label: "Editor padding",
 			description: "Horizontal padding for input editor (0-3)",
@@ -898,6 +911,9 @@ export class SettingsSelectorComponent extends Container {
 						break;
 					case "show-hardware-cursor":
 						callbacks.onShowHardwareCursorChange(newValue === "true");
+						break;
+					case "cursor-style":
+						callbacks.onCursorStyleChange(newValue as CursorStyle);
 						break;
 					case "editor-padding":
 						callbacks.onEditorPaddingXChange(parseInt(newValue, 10));

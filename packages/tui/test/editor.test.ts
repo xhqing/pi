@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { stripVTControlCharacters } from "node:util";
 import { type AutocompleteProvider, CombinedAutocompleteProvider } from "../src/autocomplete.ts";
 import { Editor, wordWrapLine } from "../src/components/editor.ts";
-import type { TUI } from "../src/tui.ts";
+import { CURSOR_MARKER, type TUI } from "../src/tui.ts";
 import { TuiMainScreen } from "../src/tui-main-screen.ts";
 import { visibleWidth } from "../src/utils.ts";
 import { defaultEditorTheme } from "./test-themes.ts";
@@ -4160,6 +4160,82 @@ describe("Editor component", () => {
 			editor.handleInput("\r");
 
 			assert.strictEqual(submitted, pastedText);
+		});
+	});
+
+	// Issue #1: option to use the terminal's hardware cursor as the editor caret
+	describe("hardware cursor style", () => {
+		it("skips the reverse-video block when focused and cursorStyle is hardware", () => {
+			const tui = createTestTUI();
+			tui.setCursorStyle("hardware");
+			const editor = new Editor(tui, defaultEditorTheme);
+			editor.setText("hello");
+			editor.focused = true;
+
+			const contentLine = editor.render(20)[1]!;
+
+			assert.ok(contentLine.includes(CURSOR_MARKER), "Should emit CURSOR_MARKER for hardware cursor positioning");
+			assert.ok(contentLine.includes("hello"), "Text should render normally");
+			assert.ok(!contentLine.includes("\x1b[7m"), "Should not draw the reverse-video block caret");
+		});
+
+		it("does not add a trailing cursor cell at end of line in hardware mode", () => {
+			const tui = createTestTUI();
+			tui.setCursorStyle("hardware");
+			const editor = new Editor(tui, defaultEditorTheme);
+			editor.setText("hello");
+			editor.focused = true;
+
+			const contentLine = editor.render(20)[1]!;
+
+			// Block style appends a highlighted space (\x1b[7m \x1b[0m) for the
+			// end-of-line cursor; hardware mode must not.
+			assert.ok(!contentLine.includes("\x1b[7m \x1b[0m"), "No extra cursor cell at end of line");
+			assert.strictEqual(
+				visibleWidth(contentLine.replaceAll(CURSOR_MARKER, "")),
+				20,
+				"Line is padded to full width by plain spaces only",
+			);
+		});
+
+		it("keeps the block caret as fallback when unfocused in hardware mode", () => {
+			const tui = createTestTUI();
+			tui.setCursorStyle("hardware");
+			const editor = new Editor(tui, defaultEditorTheme);
+			editor.setText("hello");
+			editor.focused = false;
+
+			const contentLine = editor.render(20)[1]!;
+
+			assert.ok(contentLine.includes("\x1b[7m"), "Unfocused editor keeps the block caret fallback");
+			assert.ok(!contentLine.includes(CURSOR_MARKER), "No CURSOR_MARKER when unfocused");
+		});
+
+		it("draws the block caret and marker by default (block style)", () => {
+			const tui = createTestTUI();
+			const editor = new Editor(tui, defaultEditorTheme);
+			editor.setText("hello");
+			editor.focused = true;
+
+			const contentLine = editor.render(20)[1]!;
+
+			assert.ok(contentLine.includes("\x1b[7m"), "Block style draws the reverse-video caret");
+			assert.ok(contentLine.includes(CURSOR_MARKER), "Block style still emits the marker for IME positioning");
+		});
+
+		it("updates rendering when cursorStyle changes at runtime", () => {
+			const tui = createTestTUI();
+			const editor = new Editor(tui, defaultEditorTheme);
+			editor.setText("hello");
+			editor.focused = true;
+
+			assert.ok(editor.render(20)[1]!.includes("\x1b[7m"));
+
+			tui.setCursorStyle("hardware");
+			assert.ok(!editor.render(20)[1]!.includes("\x1b[7m"));
+
+			tui.setCursorStyle("block");
+			assert.ok(editor.render(20)[1]!.includes("\x1b[7m"));
 		});
 	});
 });

@@ -1,4 +1,4 @@
-import type { Terminal } from "@earendil-works/pi-tui";
+import type { CursorStyle, Terminal } from "@earendil-works/pi-tui";
 import { ProcessTerminal, type TUI, TuiAltScreen, TuiMainScreen } from "@earendil-works/pi-tui";
 import { copyToClipboard } from "../../utils/clipboard.ts";
 import { openBrowser } from "../../utils/open-browser.ts";
@@ -8,6 +8,7 @@ import { theme } from "./theme/theme.ts";
 export interface InteractiveTuiOptions {
 	readonly tuiMode: "regular" | "fullscreen";
 	readonly showHardwareCursor: boolean;
+	readonly cursorStyle: CursorStyle;
 	readonly logDirectory: string;
 	readonly terminal?: Terminal;
 	readonly onRightClickPaste?: () => void;
@@ -22,29 +23,35 @@ export function createInteractiveTui(options: InteractiveTuiOptions): TuiMainScr
 	const terminal = options.terminal ?? new ProcessTerminal();
 	if (options.tuiMode === "fullscreen") {
 		const styleSearchMatch = (text: string) => theme.bg("searchMatchBg", theme.fg("searchMatchText", text));
-		return new TuiAltScreen(terminal, options.showHardwareCursor, options.logDirectory, {
-			searchMatchStyle: (text) => theme.underline(styleSearchMatch(text)),
-			searchCurrentMatchStyle: (text) => theme.bold(theme.inverse(styleSearchMatch(text))),
-			searchNavigationButtonStyle: (text, hovered) => (hovered ? theme.underline(text) : text),
-			scrollToEndIndicator: () => {
-				const shortcut = keyDisplayText("tui.altScreen.bottom");
-				const label = ` ↓ Jump to latest message${shortcut ? ` · ${shortcut}` : ""} `;
-				return theme.bg("selectedBg", theme.fg("text", label));
+		return new TuiAltScreen(
+			terminal,
+			options.showHardwareCursor,
+			options.logDirectory,
+			{
+				searchMatchStyle: (text) => theme.underline(styleSearchMatch(text)),
+				searchCurrentMatchStyle: (text) => theme.bold(theme.inverse(styleSearchMatch(text))),
+				searchNavigationButtonStyle: (text, hovered) => (hovered ? theme.underline(text) : text),
+				scrollToEndIndicator: () => {
+					const shortcut = keyDisplayText("tui.altScreen.bottom");
+					const label = ` ↓ Jump to latest message${shortcut ? ` · ${shortcut}` : ""} `;
+					return theme.bg("selectedBg", theme.fg("text", label));
+				},
+				openUrl: openBrowser,
+				onRightClickPaste: options.onRightClickPaste,
+				copyOnSelect: options.fullscreenCopyOnSelect,
+				copySelection: async (text) => {
+					try {
+						await copyToClipboard(text);
+						return true;
+					} catch (error) {
+						return error instanceof Error ? error.message : String(error);
+					}
+				},
 			},
-			openUrl: openBrowser,
-			onRightClickPaste: options.onRightClickPaste,
-			copyOnSelect: options.fullscreenCopyOnSelect,
-			copySelection: async (text) => {
-				try {
-					await copyToClipboard(text);
-					return true;
-				} catch (error) {
-					return error instanceof Error ? error.message : String(error);
-				}
-			},
-		});
+			options.cursorStyle,
+		);
 	}
-	return new TuiMainScreen(terminal, options.showHardwareCursor, options.logDirectory);
+	return new TuiMainScreen(terminal, options.showHardwareCursor, options.logDirectory, options.cursorStyle);
 }
 
 /** Stable reference for components while InteractiveMode replaces the active renderer. */

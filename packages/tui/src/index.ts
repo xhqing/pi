@@ -121,6 +121,7 @@ export {
 	type Component,
 	Container,
 	CURSOR_MARKER,
+	type CursorStyle,
 	compositeTuiLine,
 	type Focusable,
 	isFocusable,

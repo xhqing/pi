@@ -555,6 +555,10 @@ export class Editor implements Component, Focusable {
 		// hardware cursor for IME candidate-window placement even while
 		// autocomplete (e.g. slash-command menu) is visible.
 		const emitCursorMarker = this.focused;
+		// In hardware cursor mode the terminal's native caret marks the position,
+		// so the reverse-video block is skipped underneath it. When unfocused the
+		// hardware cursor is hidden, so the block remains as the caret fallback.
+		const hardwareCursorCaret = emitCursorMarker && this.tui.getCursorStyle() === "hardware";
 
 		for (const layoutLine of visibleLines) {
 			let displayText = layoutLine.text;
@@ -569,7 +573,12 @@ export class Editor implements Component, Focusable {
 				// Hardware cursor marker (zero-width, emitted before fake cursor for IME positioning)
 				const marker = emitCursorMarker ? CURSOR_MARKER : "";
 
-				if (after.length > 0) {
+				if (hardwareCursorCaret) {
+					// The terminal's native cursor marks the caret; no fake block under it.
+					// No extra trailing cell is needed at end-of-line either — the hardware
+					// cursor can sit on the padding beyond the text.
+					displayText = before + marker + after;
+				} else if (after.length > 0) {
 					// Cursor is on a character (grapheme) - replace it with highlighted version
 					// Get the first grapheme from 'after'
 					const afterGraphemes = [...this.segment(after, "grapheme")];

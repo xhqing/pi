@@ -26,6 +26,7 @@ export async function selectConfig(options: ConfigSelectorOptions): Promise<void
 			new ProcessTerminal(),
 			options.settingsManager.getShowHardwareCursor(),
 			options.agentDir,
+			options.settingsManager.getCursorStyle(),
 		);
 		ui.setClearOnShrink(options.settingsManager.getClearOnShrink());
 		let resolved = false;

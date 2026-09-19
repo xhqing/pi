@@ -538,6 +538,7 @@ export class InteractiveMode {
 		this.renderer = createInteractiveTui({
 			tuiMode,
 			showHardwareCursor: this.settingsManager.getShowHardwareCursor(),
+			cursorStyle: this.settingsManager.getCursorStyle(),
 			logDirectory: getAgentDir(),
 			terminal: options.terminal,
 			onRightClickPaste: this.onRightClickPaste,
@@ -810,6 +811,7 @@ export class InteractiveMode {
 		const focus = previousUi.getFocusedComponent();
 		const terminal = previousUi.terminal;
 		const showHardwareCursor = previousUi.getShowHardwareCursor();
+		const cursorStyle = previousUi.getCursorStyle();
 		const clearOnShrink = previousUi.getClearOnShrink();
 		const onDebug = previousUi.onDebug;
 		if (previousUi instanceof TuiMainScreen) {
@@ -824,6 +826,7 @@ export class InteractiveMode {
 		const nextUi = createInteractiveTui({
 			tuiMode: mode,
 			showHardwareCursor,
+			cursorStyle,
 			logDirectory: getAgentDir(),
 			terminal,
 			onRightClickPaste: this.onRightClickPaste,
@@ -1954,6 +1957,7 @@ export class InteractiveMode {
 		this.hideThinkingBlock = this.settingsManager.getHideThinkingBlock();
 		this.outputPad = this.settingsManager.getOutputPad();
 		this.ui.setShowHardwareCursor(this.settingsManager.getShowHardwareCursor());
+		this.ui.setCursorStyle(this.settingsManager.getCursorStyle());
 		const clearOnShrink = this.settingsManager.getClearOnShrink();
 		this.ui.setClearOnShrink(clearOnShrink);
 		if (!clearOnShrink && !this.activeStatusIndicator) {
@@ -4607,6 +4611,7 @@ export class InteractiveMode {
 					doubleEscapeAction: this.settingsManager.getDoubleEscapeAction(),
 					treeFilterMode: this.settingsManager.getTreeFilterMode(),
 					showHardwareCursor: this.settingsManager.getShowHardwareCursor(),
+					cursorStyle: this.settingsManager.getCursorStyle(),
 					showCacheMissNotices: this.settingsManager.getShowCacheMissNotices(),
 					defaultProjectTrust: this.settingsManager.getDefaultProjectTrust(),
 					editorPaddingX: this.settingsManager.getEditorPaddingX(),
@@ -4728,6 +4733,10 @@ export class InteractiveMode {
 					onShowHardwareCursorChange: (enabled) => {
 						this.settingsManager.setShowHardwareCursor(enabled);
 						this.ui.setShowHardwareCursor(enabled);
+					},
+					onCursorStyleChange: (style) => {
+						this.settingsManager.setCursorStyle(style);
+						this.ui.setCursorStyle(style);
 					},
 					onEditorPaddingXChange: (padding) => {
 						this.settingsManager.setEditorPaddingX(padding);

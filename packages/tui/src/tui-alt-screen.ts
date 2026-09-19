@@ -34,6 +34,7 @@ import {
 	type Component,
 	Container,
 	CURSOR_MARKER,
+	type CursorStyle,
 	compositeTuiLine,
 	dispatchMouseEvent,
 	type OverlayHandle,
@@ -252,8 +253,9 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		showHardwareCursor?: boolean,
 		logDirectory?: string,
 		options: TuiAltScreenOptions = {},
+		cursorStyle?: CursorStyle,
 	) {
-		super(terminal, showHardwareCursor, logDirectory);
+		super(terminal, showHardwareCursor, logDirectory, cursorStyle);
 		this.implicitDocument = {
 			render: (width) => super.render(width),
 			handleMouse: (event) => super.handleMouse(event),
@@ -1712,7 +1714,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 
 		if (cursorPos) {
 			buffer += `\x1b[${cursorPos.row + 1};${Math.min(width, cursorPos.col) + 1}H`;
-			buffer += this.getShowHardwareCursor() ? "\x1b[?25h" : "\x1b[?25l";
+			buffer += this.shouldShowHardwareCursor() ? "\x1b[?25h" : "\x1b[?25l";
 		} else {
 			buffer += "\x1b[?25l";
 		}

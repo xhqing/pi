@@ -422,6 +422,9 @@ export interface TuiStopOptions {
 	preserveScreen?: boolean;
 }
 
+/** Editor caret style. "block" draws a reverse-video cell; "hardware" uses the terminal's native cursor. */
+export type CursorStyle = "block" | "hardware";
+
 export interface TUI extends Component {
 	readonly mode: TuiMode;
 	children: Component[];
@@ -433,6 +436,8 @@ export interface TUI extends Component {
 	clear(): void;
 	getShowHardwareCursor(): boolean;
 	setShowHardwareCursor(enabled: boolean): void;
+	getCursorStyle(): CursorStyle;
+	setCursorStyle(style: CursorStyle): void;
 	getClearOnShrink(): boolean;
 	setClearOnShrink(enabled: boolean): void;
 	setFocus(component: Component | null): void;
@@ -476,6 +481,7 @@ export abstract class TuiBase extends Container implements TUI {
 	private lastRenderAt = 0;
 	private static readonly MIN_RENDER_INTERVAL_MS = 16;
 	private showHardwareCursor = false;
+	private cursorStyle: CursorStyle = "block";
 	private clearOnShrink = false;
 	protected fullRedrawCount = 0;
 	protected stopped = false;
@@ -496,12 +502,15 @@ export abstract class TuiBase extends Container implements TUI {
 	}
 	private overlayFocusRestore: OverlayFocusRestoreState = { status: "inactive" };
 
-	constructor(terminal: Terminal, showHardwareCursor?: boolean, logDirectory?: string) {
+	constructor(terminal: Terminal, showHardwareCursor?: boolean, logDirectory?: string, cursorStyle?: CursorStyle) {
 		super();
 		this.terminal = terminal;
 		this.logDirectory = logDirectory;
 		if (showHardwareCursor !== undefined) {
 			this.showHardwareCursor = showHardwareCursor;
+		}
+		if (cursorStyle !== undefined) {
+			this.cursorStyle = cursorStyle;
 		}
 	}
 
@@ -532,6 +541,21 @@ export abstract class TuiBase extends Container implements TUI {
 			this.terminal.hideCursor();
 		}
 		this.requestRender();
+	}
+
+	getCursorStyle(): CursorStyle {
+		return this.cursorStyle;
+	}
+
+	setCursorStyle(style: CursorStyle): void {
+		if (this.cursorStyle === style) return;
+		this.cursorStyle = style;
+		this.requestRender();
+	}
+
+	/** Hardware cursor is shown when explicitly enabled or when cursorStyle delegates the caret to it. */
+	protected shouldShowHardwareCursor(): boolean {
+		return this.showHardwareCursor || this.cursorStyle === "hardware";
 	}
 
 	getClearOnShrink(): boolean {

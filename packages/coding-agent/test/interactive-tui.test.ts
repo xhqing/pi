@@ -53,6 +53,7 @@ describe("createInteractiveTui", () => {
 		const mainTui = createInteractiveTui({
 			tuiMode: "regular",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal: mainTerminal,
 		});
@@ -67,6 +68,7 @@ describe("createInteractiveTui", () => {
 		const altTui = createInteractiveTui({
 			tuiMode: "fullscreen",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal: altTerminal,
 		});
@@ -86,6 +88,7 @@ describe("createInteractiveTui", () => {
 		const ui = createInteractiveTui({
 			tuiMode: "fullscreen",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal,
 		});
@@ -112,6 +115,7 @@ describe("createInteractiveTui", () => {
 		const renderer = createInteractiveTui({
 			tuiMode: "regular",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal,
 		});
@@ -216,6 +220,7 @@ describe("InteractiveMode copy confirmation", () => {
 		const ui = createInteractiveTui({
 			tuiMode: "fullscreen",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal,
 			fullscreenCopyOnSelect: false,
@@ -259,6 +264,7 @@ describe("InteractiveMode copy confirmation", () => {
 		const ui = createInteractiveTui({
 			tuiMode: "fullscreen",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal,
 		});
@@ -301,6 +307,7 @@ describe("InteractiveMode copy confirmation", () => {
 		const ui = createInteractiveTui({
 			tuiMode: "fullscreen",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal,
 		});
@@ -332,6 +339,7 @@ describe("InteractiveMode copy confirmation", () => {
 		const ui = createInteractiveTui({
 			tuiMode: "regular",
 			showHardwareCursor: false,
+			cursorStyle: "block",
 			logDirectory: "/tmp",
 			terminal: new RecordingTerminal(),
 		});

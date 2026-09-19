@@ -743,6 +743,7 @@ export async function runClientTui(command: ClientCommand, options: RunClientTui
 	const tui = createInteractiveTui({
 		tuiMode: "fullscreen",
 		showHardwareCursor: settingsManager.getShowHardwareCursor(),
+		cursorStyle: settingsManager.getCursorStyle(),
 		logDirectory: agentDir,
 	});
 	tui.setClearOnShrink(settingsManager.getClearOnShrink());

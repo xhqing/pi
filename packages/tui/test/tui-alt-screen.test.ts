@@ -5,6 +5,7 @@ import {
 	AltScreenSearchIndex,
 	findAltScreenSearchMatches,
 } from "../src/alt-screen-search.ts";
+import { Editor } from "../src/components/editor.ts";
 import { HStack } from "../src/components/h-stack.ts";
 import { Image } from "../src/components/image.ts";
 import { MouseRegion } from "../src/components/mouse-region.ts";
@@ -23,6 +24,7 @@ import {
 import type { TuiMouseEvent } from "../src/tui.ts";
 import { TuiAltScreen } from "../src/tui-alt-screen.ts";
 import { stripTerminalSequences, visibleWidth } from "../src/utils.ts";
+import { defaultEditorTheme } from "./test-themes.ts";
 import { VirtualTerminal } from "./virtual-terminal.ts";
 
 const OSC133_ZONE_START = "\x1b]133;A\x07";
@@ -1324,6 +1326,47 @@ describe("TuiAltScreen", () => {
 
 		assert.deepStrictEqual(copied, ["alpha\nbeta"]);
 		assert.ok(terminal.getViewport().some((line) => line.includes("Copied!")));
+
+		tui.stop();
+	});
+
+	// Issue #1: option to use the terminal's hardware cursor as the editor caret
+	it("shows the hardware cursor as the caret when cursorStyle is hardware", async () => {
+		const terminal = new RecordingTerminal(30, 8);
+		const tui = new TuiAltScreen(terminal, false, undefined, {}, "hardware");
+		const editor = new Editor(tui, defaultEditorTheme);
+		editor.setText("hello");
+		tui.addChild(editor);
+		tui.setFocus(editor);
+		tui.start();
+		await terminal.waitForRender();
+
+		const writes = terminal.events.filter((event) => event.type === "write").map((event) => event.data);
+		assert.ok(
+			writes.some((data) => data.includes("\x1b[?25h")),
+			"hardware cursor must be shown even with showHardwareCursor disabled",
+		);
+		assert.ok(
+			!writes.some((data) => data.includes("\x1b[7m")),
+			"editor must not draw the reverse-video block caret in hardware cursor style",
+		);
+
+		// Switching back to block hides the hardware cursor and restores the block caret.
+		const eventsBeforeSwitch = terminal.events.length;
+		tui.setCursorStyle("block");
+		await terminal.waitForRender();
+		const laterWrites = terminal.events
+			.slice(eventsBeforeSwitch)
+			.filter((event) => event.type === "write")
+			.map((event) => event.data);
+		assert.ok(
+			laterWrites.some((data) => data.includes("\x1b[?25l")),
+			"hardware cursor hidden again in block style",
+		);
+		assert.ok(
+			laterWrites.some((data) => data.includes("\x1b[7m")),
+			"block caret restored in block style",
+		);
 
 		tui.stop();
 	});

@@ -492,6 +492,25 @@ describe("SettingsManager", () => {
 		expect(reloadedManager.getFullscreenCopyOnSelect()).toBe(true);
 	});
 
+	describe("cursorStyle", () => {
+		// Issue #1: option to use the terminal's hardware cursor as the editor caret
+		it("defaults to block, persists hardware, and falls back for invalid values", async () => {
+			const manager = SettingsManager.create(projectDir, agentDir);
+
+			expect(manager.getCursorStyle()).toBe("block");
+
+			manager.setCursorStyle("hardware");
+			await manager.flush();
+			expect(manager.getCursorStyle()).toBe("hardware");
+			const savedSettings = JSON.parse(readFileSync(join(agentDir, "settings.json"), "utf-8"));
+			expect(savedSettings.cursorStyle).toBe("hardware");
+
+			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ cursorStyle: "beam" }));
+			const reloadedManager = SettingsManager.create(projectDir, agentDir);
+			expect(reloadedManager.getCursorStyle()).toBe("block");
+		});
+	});
+
 	describe("outputPad", () => {
 		it("should default to 1 and persist binary values", async () => {
 			const manager = SettingsManager.create(projectDir, agentDir);
