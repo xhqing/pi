@@ -4,7 +4,7 @@
 
 本项目由 **Atlas**（FullStackEngineerAgent，用户的全栈开发工程师）负责维护。Atlas 负责本项目的全部开发工作——与上游 earendil-works/pi 的同步合并、个人定制开发、构建发布流水线等。在本项目内的开发 / 维护需求，由 Atlas 统一处理（Atlas 的角色定义与工作原则见 FullStackEngineerAgent 项目的 `.claude/CLAUDE.md`）。
 
-pi 是 Pi agent harness 的个人 fork（origin 为 xhqing/pi，upstream 为 earendil-works/pi），TypeScript monorepo：`packages/coding-agent`（交互式 coding agent CLI，TUI）、`packages/agent`（agent 运行时：工具调用与状态管理）、`packages/ai`（统一多供应商 LLM API）、`packages/tui`（TUI 组件库）等。本文件下方的「Development Rules」一节源自上游 earendil-works/pi 的根 `AGENTS.md`：先于 2026-09-19 本地删减（剔除与全局 `~/.claude/CLAUDE.md` 冲突的条目：简短回复风格、`git add` 显式路径、宽 commit 授权、临时脚本位置、非 main 分支不记 CHANGELOG），再于 2026-09-19 迁移并入本文件并删除原 `AGENTS.md`；迁移时未收录 Releasing 一节——其指向的 `.pi/skills/release.md` 已在本 fork 删除（悬空引用），且本项目发布走全局 `/release` skill，按用户指示剔除。pi 的上下文文件按 `AGENTS.override.md` > `AGENTS.md` > `CLAUDE.md` 顺序每目录只加载第一个命中的文件，删除 `AGENTS.md` 后本文件即接续生效。上游同步合并时若 upstream 改动了 `AGENTS.md`，注意把相关变更移植到本文件的「Development Rules」一节，并保留本地删减口径。
+pi 是 Pi agent harness 的个人 fork（origin 为 xhqing/pi，upstream 为 earendil-works/pi），TypeScript monorepo：`packages/coding-agent`（交互式 coding agent CLI，TUI）、`packages/agent`（agent 运行时：工具调用与状态管理）、`packages/ai`（统一多供应商 LLM API）、`packages/tui`（TUI 组件库）等。本文件下方的「Development Rules」一节源自上游 earendil-works/pi 的根 `AGENTS.md`：先于 2026-09-19 本地删减（剔除与全局 `~/.claude/CLAUDE.md` 冲突的条目：简短回复风格、`git add` 显式路径、宽 commit 授权、临时脚本位置、非 main 分支不记 CHANGELOG），再于 2026-09-19 迁移并入本文件并删除原 `AGENTS.md`；迁移时未收录 Releasing 一节——其指向的 `.pi/skills/release.md` 已在本 fork 删除（悬空引用），且本项目发布走全局 `/release` skill，按用户指示剔除。pi 的上下文文件按 `AGENTS.override.md` > `AGENTS.md` > `CLAUDE.md` 顺序每目录只加载第一个命中的文件，删除 `AGENTS.md` 后本文件即接续生效。上游同步合并时若 upstream 改动了 `AGENTS.md`，注意把相关变更移植到本文件的「Development Rules」一节，并保留本地删减口径；该节中标注「本地增补」的小节不属上游内容，同步时不随上游变更处理。
 
 ## FullStackEngineerAgent（Atlas）CLAUDE.md 全文（随附，保证内容超集）
 
@@ -52,6 +52,10 @@ pi 是 Pi agent harness 的个人 fork（origin 为 xhqing/pi，upstream 为 ear
 独立于销售流水线。用户的全栈开发工程师。
 
 ## Development Rules（源自上游 earendil-works/pi 的 AGENTS.md，2026-09-19 迁移并入）
+
+### Workflow（本地增补，非上游内容）
+
+Core development in this repo (new features, bug fixes, anything changing the runtime behavior of `packages/*/src`) follows the global dev-workflow skill: local feature branch + test-case gate + full test suite + user acceptance before merging to main. A project not yet having a `test-cases/` acceptance suite is not a reason to skip it — the workflow's gate step blocks and bootstraps the suite. The rules below describe commit discipline and coding conventions for this repo; they do not exempt core development from that workflow. Docs-only, config-only, and version-bump changes go directly on main as usual.
 
 ### Conversational Style
 
