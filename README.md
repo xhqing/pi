@@ -5,10 +5,10 @@
 </p>
 <p align="center">
   <a href="https://github.com/xhqing/pi/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/xhqing/pi?style=flat-square" /></a>
-  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
+  <a href="./LICENSE.md"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
 </p>
 
-**English** | [中文](README_cn.md)
+**English** | [简体中文](README_cn.md)
 
 # Pi Agent Harness
 
@@ -77,6 +77,18 @@ We treat npm dependency changes as reviewed code changes.
 - CI installs with `npm ci --ignore-scripts`.
 - Shrinkwrap generation has an explicit allowlist for dependency lifecycle scripts; new lifecycle-script deps fail checks until reviewed.
 
-## License
+## License & Attribution
 
-MIT
+MIT License — see [LICENSE.md](LICENSE.md).
+
+Copyright (c) 2025 Mario Zechner (original Pi project). Copyright (c) 2026 All Contributors (this fork).
+
+Portions of this repository originate from [earendil-works/pi](https://github.com/earendil-works/pi), detached on 2026-09-19; those portions retain their original copyright and MIT notice.
+
+### Attribution
+
+When referencing this project, please attribute it to the project rather than to any individual: include the repository URL (`https://github.com/xhqing/pi`) and preserve the copyright notices contained in [LICENSE.md](LICENSE.md).
+
+### Referencing This Project
+
+Repository URL: `https://github.com/xhqing/pi`

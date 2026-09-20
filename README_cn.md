@@ -5,7 +5,7 @@
 </p>
 <p align="center">
   <a href="https://github.com/xhqing/pi/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/xhqing/pi?style=flat-square" /></a>
-  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
+  <a href="./LICENSE.md"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
 </p>
 
 [中文] | [English](README.md)
@@ -77,6 +77,18 @@ npm run check         # Lint、格式化与类型检查
 - CI 用 `npm ci --ignore-scripts` 安装。
 - Shrinkwrap 生成对依赖的生命周期脚本有显式白名单；新引入带生命周期脚本的依赖会让检查失败，直到评审通过。
 
-## 许可证
+## 版权与署名
 
-MIT
+MIT 许可证——见 [LICENSE.md](LICENSE.md)。
+
+Copyright (c) 2025 Mario Zechner（原 Pi 项目）。Copyright (c) 2026 All Contributors（本分叉）。
+
+本仓库部分内容源自 [earendil-works/pi](https://github.com/earendil-works/pi)，于 2026-09-19 断开分叉；该部分内容保留原作者版权与 MIT 声明。
+
+### 署名方式
+
+引用本项目时请署名到项目而非个人：注明仓库地址（`https://github.com/xhqing/pi`），并保留 [LICENSE.md](LICENSE.md) 中的版权声明。
+
+### 项目地址引用
+
+仓库地址：`https://github.com/xhqing/pi`
