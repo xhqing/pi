@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- Self-contained npm-layout release tarball: `scripts/build-npm-tarball.mjs` packs the bundle with the TUI native prebuilds beside it and drops workspace dependencies that are not published to npm, so the tarball installs cleanly with `npm install -g <tarball>` (fixes the broken clipboard image paste that resulted from installing an npm-layout package without native prebuilds).
+- Bilingual README: added `README_cn.md` (Chinese, authoritative) alongside the English `README.md`, with cross-links.
+
+### Changed
+
+- Repository is now a standalone fork: `xhqing/pi` was detached from the earendil-works/pi fork network on GitHub (2026-09-19) and evolves independently. Updated the project guidance (`CLAUDE.md`) to drop all upstream-sync wording (maintenance role, repository positioning, Development Rules upkeep), and removed the local `upstream` git remote.
+- The bundle build now copies the TUI native clipboard/platform prebuilds into `dist/bundle/native` (and fails the build when a prebuild is missing), so npm-layout packages are self-contained.
+- `@earendil-works/chord` is inlined into the bundle instead of staying external; the npm-layout package no longer depends on unpublished workspace packages.
+
+### Removed
+
+- Upstream community infrastructure after detaching from the upstream fork network: contributor/issue/PR/npm-audit/model-catalog workflows, issue templates, `APPROVED_CONTRIBUTORS`, and `CONTRIBUTING.md`. `ci.yml` and `build-binaries.yml` are kept. README dropped the upstream badges, auto-close notice, pi-chat link, RFC link, and session-sharing sections; release-badge and fork-independence notes were added.
+
 ## [0.86.0] - 2026-09-19
 
 ### Breaking Changes

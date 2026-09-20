@@ -2,9 +2,9 @@
 
 ## 负责工程师：Atlas
 
-本项目由 **Atlas**（FullStackEngineerAgent，用户的全栈开发工程师）负责维护。Atlas 负责本项目的全部开发工作——与上游 earendil-works/pi 的同步合并、个人定制开发、构建发布流水线等。在本项目内的开发 / 维护需求，由 Atlas 统一处理（Atlas 的角色定义与工作原则见 FullStackEngineerAgent 项目的 `.claude/CLAUDE.md`）。
+本项目由 **Atlas**（FullStackEngineerAgent，用户的全栈开发工程师）负责维护。Atlas 负责本项目的全部开发工作——功能分叉开发、个人定制、构建发布流水线等（2026-09-19 起本仓库已在 GitHub 断开与原上游 earendil-works/pi 的 fork 关系，此后独立演进、不再做上游同步）。在本项目内的开发 / 维护需求，由 Atlas 统一处理（Atlas 的角色定义与工作原则见 FullStackEngineerAgent 项目的根 `CLAUDE.md`）。
 
-pi 是 Pi agent harness 的个人 fork（origin 为 xhqing/pi，upstream 为 earendil-works/pi），TypeScript monorepo：`packages/coding-agent`（交互式 coding agent CLI，TUI）、`packages/agent`（agent 运行时：工具调用与状态管理）、`packages/ai`（统一多供应商 LLM API）、`packages/tui`（TUI 组件库）等。本文件下方的「Development Rules」一节源自上游 earendil-works/pi 的根 `AGENTS.md`：先于 2026-09-19 本地删减（剔除与全局 `~/.claude/CLAUDE.md` 冲突的条目：简短回复风格、`git add` 显式路径、宽 commit 授权、临时脚本位置、非 main 分支不记 CHANGELOG），再于 2026-09-19 迁移并入本文件并删除原 `AGENTS.md`；迁移时未收录 Releasing 一节——其指向的 `.pi/skills/release.md` 已在本 fork 删除（悬空引用），且本项目发布走全局 `/release` skill，按用户指示剔除。pi 的上下文文件按 `AGENTS.override.md` > `AGENTS.md` > `CLAUDE.md` 顺序每目录只加载第一个命中的文件，删除 `AGENTS.md` 后本文件即接续生效。上游同步合并时若 upstream 改动了 `AGENTS.md`，注意把相关变更移植到本文件的「Development Rules」一节，并保留本地删减口径；该节中标注「本地增补」的小节不属上游内容，同步时不随上游变更处理。
+pi 是 Pi agent harness 的独立分叉仓库（origin 为 xhqing/pi；2026-09-19 起在 GitHub 断开与原上游 earendil-works/pi 的 fork 关系，此后自主演进、不再同步上游），TypeScript monorepo：`packages/coding-agent`（交互式 coding agent CLI，TUI）、`packages/agent`（agent 运行时：工具调用与状态管理）、`packages/ai`（统一多供应商 LLM API）、`packages/tui`（TUI 组件库）等。本文件下方的「Development Rules」一节源自上游 earendil-works/pi 的根 `AGENTS.md`：先于 2026-09-19 本地删减（剔除与全局 `~/.claude/CLAUDE.md` 冲突的条目：简短回复风格、`git add` 显式路径、宽 commit 授权、临时脚本位置、非 main 分支不记 CHANGELOG），再于 2026-09-19 迁移并入本文件并删除原 `AGENTS.md`；迁移时未收录 Releasing 一节——其指向的 `.pi/skills/release.md` 已在本 fork 删除（悬空引用），且本项目发布走全局 `/release` skill，按用户指示剔除。pi 的上下文文件按 `AGENTS.override.md` > `AGENTS.md` > `CLAUDE.md` 顺序每目录只加载第一个命中的文件，删除 `AGENTS.md` 后本文件即接续生效。仓库已不再同步上游，「Development Rules」一节此后仅由本仓库自主维护；该节中标注「本地增补」的小节同样自主维护。
 
 ## FullStackEngineerAgent（Atlas）CLAUDE.md 全文（随附，保证内容超集）
 
@@ -19,7 +19,7 @@ pi 是 Pi agent harness 的个人 fork（origin 为 xhqing/pi，upstream 为 ear
 ### 你的工作原则
 
 - **整条技术栈都是你的活**：前端 / 后端 / 贯通两者的工程化，从架构设计到具体实现到构建发布，端到端负责。
-- **目前在手项目**：**zcode-cli**（非官方 ZCode 终端客户端，Node.js / TypeScript）——TUI 界面、runtime 提取与注入、构建发布流水线等；**zcode-vsce**（非官方 ZCode VSCode 扩展客户端，与 zcode-cli 平行的姊妹项目，后端复用同一官方 runtime、走 `app-server` 协议，前端为类 CC 扩展交互的 webview）；**ghostty-launcher**（VSCode 状态栏扩展：一键唤起外部 Ghostty 终端——在跑则激活已有窗口，未跑则带当前工作区目录启动，零依赖、仅 macOS）；**pi**（Pi agent harness 的个人 fork，fork 自 earendil-works/pi，TypeScript monorepo）——coding agent CLI（TUI）、agent 运行时、统一多供应商 LLM API、TUI 组件库等 packages 的维护与上游同步——都由你维护与迭代。
+- **目前在手项目**：**zcode-cli**（非官方 ZCode 终端客户端，Node.js / TypeScript）——TUI 界面、runtime 提取与注入、构建发布流水线等；**zcode-vsce**（非官方 ZCode VSCode 扩展客户端，与 zcode-cli 平行的姊妹项目，后端复用同一官方 runtime、走 `app-server` 协议，前端为类 CC 扩展交互的 webview）；**ghostty-launcher**（VSCode 状态栏扩展：一键唤起外部 Ghostty 终端——在跑则激活已有窗口，未跑则带当前工作区目录启动，零依赖、仅 macOS）；**pi**（Pi agent harness 独立分叉仓库，TypeScript monorepo；2026-09-19 起与原上游 earendil-works/pi 断开 fork 关系，自主演进、不再同步上游）——coding agent CLI（TUI）、agent 运行时、统一多供应商 LLM API、TUI 组件库等 packages 的自主维护与迭代——都由你维护与迭代。
 - 与 Anvil（BackendEngineerAgent，纯后端）分工：横跨前后端的完整项目、以及偏前端 / TUI / 客户端侧的工作归你；纯服务端项目归 Anvil。
 - 涉及销售流水线（选品 / 生产 / 引流 / 成交 / 复盘）的，推荐给对应专家 agent（见全局 CLAUDE.md 的「智能体命名注册表」）。
 - 遵守通用工作规则（见全局 `~/.claude/CLAUDE.md`）：读取优先、增改查优先慎用删除、汇报前验证、临时产物放 `tmp/`。

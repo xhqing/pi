@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { chmodSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { isBuiltin } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,11 +16,6 @@ const banner = {
 	js: 'import { createRequire as __piCreateRequire } from "node:module"; const require = __piCreateRequire(import.meta.url);',
 };
 const allowedExternalPackages = new Set([
-	"@earendil-works/chord",
-	"@earendil-works/chord/bundler",
-	"@earendil-works/chord/context",
-	"@earendil-works/chord/delta",
-	"@earendil-works/chord/node",
 	"@silvia-odwyer/photon-node",
 	"jiti",
 	// Optional native accelerators. Their callers fall back to JavaScript when absent.
@@ -86,7 +81,7 @@ function commonBuildOptions() {
 		banner,
 		bundle: true,
 		define: { PI_BUNDLED_NODE: "true" },
-		external: ["@earendil-works/chord", "@silvia-odwyer/photon-node"],
+		external: ["@silvia-odwyer/photon-node"],
 		format: "esm",
 		legalComments: "none",
 		logLevel: "warning",
@@ -208,6 +203,29 @@ validateExternalImports([mainResult.metafile, lazyResult.metafile]);
 chmodSync(join(bundleDir, "cli.js"), 0o755);
 chmodSync(join(bundleDir, "rpc-entry.js"), 0o755);
 
+// Ship the TUI native clipboard/platform prebuilds beside the bundle so the
+// npm-layout package is self-contained: getNativeModuleCandidates() probes
+// `<bundleDir>/native/...` when the pi-tui package cannot be resolved.
+const nativePrebuilds = [
+	["darwin", "darwin-arm64", "darwin-platform.node"],
+	["darwin", "darwin-x64", "darwin-platform.node"],
+	["linux", "linux-arm64", "linux-platform-x11.node"],
+	["linux", "linux-x64", "linux-platform-x11.node"],
+	["win32", "win32-arm64", "win32-platform.node"],
+	["win32", "win32-x64", "win32-platform.node"],
+];
+let nativeFileCount = 0;
+for (const [platform, archDir, fileName] of nativePrebuilds) {
+	const source = join(repoRoot, "packages", "tui", "native", platform, "prebuilds", archDir, fileName);
+	if (!existsSync(source)) {
+		throw new Error(`Native prebuild is missing: ${relative(repoRoot, source)}. The bundle would silently lose clipboard support.`);
+	}
+	const target = join(bundleDir, "native", platform, "prebuilds", archDir, fileName);
+	mkdirSync(dirname(target), { recursive: true });
+	copyFileSync(source, target);
+	nativeFileCount++;
+}
+
 const files = new Set([...Object.keys(mainResult.metafile.outputs), ...Object.keys(lazyResult.metafile.outputs)]).size;
 const mib = outputBytes([mainResult.metafile, lazyResult.metafile]) / (1024 * 1024);
-console.log(`Built ${relative(repoRoot, bundleDir)} (${files} files, ${mib.toFixed(1)} MiB)`);
+console.log(`Built ${relative(repoRoot, bundleDir)} (${files} files, ${mib.toFixed(1)} MiB, ${nativeFileCount} native prebuilds)`);
