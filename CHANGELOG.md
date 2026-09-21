@@ -18,6 +18,8 @@ Root-level changelog and version baseline for the standalone fork. The root vers
 
 ### Changed
 
+- `TODO.md` / `TODO-archive.md`: archived **T3** as transferred to [Issue #4](https://github.com/xhqing/pi/issues/4) — the issue already carries the full Problem / Expected-behavior spec, so keeping the same item active in both TODO.md and the issue duplicated tracking (each side could drift out of sync). Implementation will proceed from the issue via dev-workflow when scheduled.
+- `.gitignore`: removed the inherited `todo.md` ignore rule — an upstream leftover (badlogic's commit `d89f6e08c`, 2026-01-22) that on macOS (`core.ignorecase=true`) also matched the fork's own tracked-file `TODO.md`, making git/VSCode treat it as ignored (gray in the explorer) and keeping it out of version control. `TODO.md` is a standard project file here and should be trackable.
 - `TODO.md` / `TODO-archive.md`: archived **T2** (paste-image via `cmd+v`) as completed — the goal was reached on the terminal side instead of changing pi's default keybinding: the Ghostty fork patch (`v1.3.1-paste.1`, merged into its main) turns clipboard images into a temp PNG file path on Cmd+V, so TUIs including pi receive the image path as pasted text. No pi-side change needed; `app.clipboard.pasteImage` stays `ctrl+v`.
 
 ### Fixed
