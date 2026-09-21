@@ -8,6 +8,10 @@ Root-level changelog and version baseline for the standalone fork. The root vers
 
 - `TODO.md`: registered **T3** — repoint the version update check from the upstream pi.dev endpoint to this fork's own GitHub Releases and unify the version numbering (root `VERSION` 0.0.3 vs the upstream-inherited `package.json` 0.86.0 coexist; the upstream update banner misleads fork users, and `pi update` can overwrite the fork install with the official package).
 
+### Fixed
+
+- `packages/chord` (`src/delta/index.ts` `spliceItems`): reduced the splice chunk size from 10,000 to 4,096 spread args — ~10k positional args sit at the V8 call-stack limit on macOS / Node 22 and made the large-append delta test fail stably in local full-suite runs (`RangeError: Maximum call stack size exceeded`). No behavior change beyond stack headroom; local `./test.sh` is fully green again ([#2](https://github.com/xhqing/pi/issues/2)).
+
 ## [0.0.3] - 2026-09-20
 
 Initial root version, taken from the root `package.json` (`pi-monorepo` 0.0.3).
