@@ -2,6 +2,12 @@
 
 Root-level changelog and version baseline for the standalone fork. The root version tracks the `pi-monorepo` workspace root; per-package changes continue to be recorded in `packages/*/CHANGELOG.md`. This file was created on 2026-09-20, after the repository was detached from the earendil-works/pi fork network (2026-09-19), to give the now-independent repo a single root version authority.
 
+## [Unreleased]
+
+### Added
+
+- `TODO.md`: registered **T3** — repoint the version update check from the upstream pi.dev endpoint to this fork's own GitHub Releases and unify the version numbering (root `VERSION` 0.0.3 vs the upstream-inherited `package.json` 0.86.0 coexist; the upstream update banner misleads fork users, and `pi update` can overwrite the fork install with the official package).
+
 ## [0.0.3] - 2026-09-20
 
 Initial root version, taken from the root `package.json` (`pi-monorepo` 0.0.3).
