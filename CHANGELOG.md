@@ -7,6 +7,11 @@ Root-level changelog and version baseline for the standalone fork. The root vers
 ### Added
 
 - `TODO.md`: registered **T3** — repoint the version update check from the upstream pi.dev endpoint to this fork's own GitHub Releases and unify the version numbering (root `VERSION` 0.0.3 vs the upstream-inherited `package.json` 0.86.0 coexist; the upstream update banner misleads fork users, and `pi update` can overwrite the fork install with the official package).
+- `packages/coding-agent/test/fork-version.test.ts`: new test-first coverage for issue #4 — the runtime package version (`packages/coding-agent/package.json`, re-exported as `config.ts` `VERSION`) must equal the repo root `VERSION` file, locking the "root VERSION is the single source of truth" acceptance criterion.
+
+### Changed
+
+- `packages/coding-agent/test/version-check.test.ts` and `test/package-command-paths.test.ts`: rewrote the update-check expectations for issue #4 ahead of implementation (tests red on the current upstream-pointing code): version-check requests must target this fork's GitHub Releases (`xhqing/pi`) with zero `pi.dev` traffic, response mocks use the GitHub `tag_name` payload shape, and `pi update --self` (installer-managed and npm-global paths) must either update from the fork's own source or disable with fork guidance — both Issue-sanctioned outcomes. Removed passthrough cases for `packageName`/`note` fields and the renamed-package self-update cases: GitHub release payloads carry neither field, so upstream's package-migration flow is unreachable from the fork's check source.
 
 ### Fixed
 

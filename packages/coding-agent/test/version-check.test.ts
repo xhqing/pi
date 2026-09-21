@@ -34,25 +34,29 @@ describe("version checks", () => {
 		expect(isNewerPackageVersion("0.70.6", "0.70.5")).toBe(true);
 	});
 
-	it("returns only newer versions", async () => {
-		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.3" }));
+	it("returns only newer fork releases", async () => {
+		const fetchMock = vi.fn(async () => Response.json({ tag_name: "v1.2.3" }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(checkForNewPiVersion("1.2.3")).resolves.toBeUndefined();
-		await expect(checkForNewPiVersion("1.2.2")).resolves.toEqual({ version: "1.2.3" });
+		const release = await checkForNewPiVersion("1.2.2");
+		expect(release?.version).toMatch(/^v?1\.2\.3$/);
 	});
 
-	it("uses the pi.dev version check api with a pi user agent", async () => {
-		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.4" }));
+	it("checks this fork's GitHub releases instead of upstream pi.dev", async () => {
+		const fetchMock = vi.fn(async () => Response.json({ tag_name: "v1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(getLatestPiVersion("1.2.3")).resolves.toBe("1.2.4");
-		expect(fetchMock).toHaveBeenCalledWith(
-			"https://pi.dev/api/latest-version",
+		const release = await getLatestPiRelease("1.2.3");
+		expect(release?.version).toMatch(/^v?1\.2\.4$/);
+		expect(fetchMock).toHaveBeenCalledOnce();
+		const [requestedUrl, requestInit] = fetchMock.mock.calls[0];
+		expect(String(requestedUrl)).toContain("xhqing/pi");
+		expect(String(requestedUrl)).not.toContain("pi.dev");
+		expect(requestInit).toEqual(
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					"User-Agent": expect.stringMatching(/^pi\/1\.2\.3 /),
-					accept: "application/json",
 				}),
 			}),
 		);
@@ -63,10 +67,11 @@ describe("version checks", () => {
 			.fn()
 			.mockRejectedValueOnce(new Error("fetch failed"))
 			.mockRejectedValueOnce(new Error("fetch failed"))
-			.mockResolvedValueOnce(Response.json({ version: "1.2.4" }));
+			.mockResolvedValueOnce(Response.json({ tag_name: "v1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(getLatestPiRelease("1.2.3", { retry: true })).resolves.toEqual({ version: "1.2.4" });
+		const release = await getLatestPiRelease("1.2.3", { retry: true });
+		expect(release?.version).toMatch(/^v?1\.2\.4$/);
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 	});
 
@@ -89,27 +94,10 @@ describe("version checks", () => {
 		expect(formatVersionCheckError(error)).toBe("fetch failed (ETIMEDOUT, ENETUNREACH)");
 	});
 
-	it("returns the active package metadata from the version check api", async () => {
-		const fetchMock = vi.fn(async () =>
-			Response.json({
-				packageName: "@new-scope/pi",
-				version: "1.2.4",
-			}),
-		);
-		vi.stubGlobal("fetch", fetchMock);
-
-		await expect(getLatestPiRelease("1.2.3")).resolves.toEqual({
-			packageName: "@new-scope/pi",
-			version: "1.2.4",
-		});
-	});
-
-	it("returns update notes from the version check api", async () => {
-		const fetchMock = vi.fn(async () => Response.json({ note: " **Read this** ", version: "1.2.4" }));
-		vi.stubGlobal("fetch", fetchMock);
-
-		await expect(getLatestPiRelease("1.2.3")).resolves.toEqual({ note: "**Read this**", version: "1.2.4" });
-	});
+	// Issue #4: the version check now reads this fork's GitHub Releases, whose
+	// payloads have no packageName/note fields, so those passthrough cases were
+	// removed. If the fork later surfaces GitHub release bodies as notes, add
+	// coverage for that mapping here.
 
 	it("skips automatic api calls when version checks are disabled", async () => {
 		process.env.PI_SKIP_VERSION_CHECK = "1";
@@ -122,10 +110,11 @@ describe("version checks", () => {
 
 	it("allows direct api calls when automatic version checks are disabled", async () => {
 		process.env.PI_SKIP_VERSION_CHECK = "1";
-		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.4" }));
+		const fetchMock = vi.fn(async () => Response.json({ tag_name: "v1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(getLatestPiVersion("1.2.3")).resolves.toBe("1.2.4");
+		const latest = await getLatestPiVersion("1.2.3");
+		expect(latest).toMatch(/^v?1\.2\.4$/);
 		expect(fetchMock).toHaveBeenCalledOnce();
 	});
 });

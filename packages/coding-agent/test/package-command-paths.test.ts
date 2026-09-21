@@ -99,8 +99,8 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 			"fetch",
 			vi.fn(async (input: string | URL | Request) => {
 				const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-				if (url === "https://pi.dev/api/latest-version") {
-					return Response.json({ packageName: PACKAGE_NAME, version: targetVersion });
+				if (url.includes("xhqing/pi")) {
+					return Response.json({ tag_name: `v${targetVersion}` });
 				}
 				const releaseUrl = `https://example.test/api/installer/releases/${targetVersion}`;
 				if (url === `${releaseUrl}/package.json` || url === `${releaseUrl}/package-lock.json`) {
@@ -559,7 +559,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 	it("allows explicit self-update checks when automatic version checks are disabled", async () => {
 		const previousSkipVersionCheck = process.env.PI_SKIP_VERSION_CHECK;
 		process.env.PI_SKIP_VERSION_CHECK = "1";
-		const fetchMock = vi.fn(async () => Response.json({ version: VERSION }));
+		const fetchMock = vi.fn(async () => Response.json({ tag_name: `v${VERSION}` }));
 		vi.stubGlobal("fetch", fetchMock);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -589,7 +589,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 			.fn()
 			.mockRejectedValueOnce(new Error("fetch failed"))
 			.mockRejectedValueOnce(new Error("fetch failed"))
-			.mockResolvedValueOnce(Response.json({ version: VERSION }));
+			.mockResolvedValueOnce(Response.json({ tag_name: `v${VERSION}` }));
 		vi.stubGlobal("fetch", fetchMock);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -633,6 +633,38 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 		);
 		expect(errorSpy).not.toHaveBeenCalled();
 		expect(process.exitCode).toBeUndefined();
+	});
+
+	it("cuts upstream pi.dev out of installer-managed self-updates", async () => {
+		const targetVersion = getNewerPatchVersion();
+		const { managedRoot } = prepareManagedInstall(targetVersion);
+		// Clear the stubbed installer override so the default source is exercised.
+		vi.stubEnv("PI_INSTALLER_API_BASE", "");
+		const requestedUrls: string[] = [];
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (input: string | URL | Request) => {
+				const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+				requestedUrls.push(url);
+				if (url.includes("xhqing/pi")) return Response.json({ tag_name: `v${targetVersion}` });
+				return Response.json({});
+			}),
+		);
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
+
+		expect(requestedUrls.some((url) => url.includes("pi.dev"))).toBe(false);
+		const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+			.map(([message]) => String(message))
+			.join("\n");
+		const currentVersion = readFileSync(join(managedRoot, "current-version"), "utf8").trim();
+		const updated = currentVersion === targetVersion || currentVersion === `v${targetVersion}`;
+		const guided = output.includes("xhqing/pi");
+		// Issue #4 allows either a fork-hosted installer source (update succeeds)
+		// or disabling managed updates with fork guidance in the output.
+		expect(updated || guided).toBe(true);
 	});
 
 	it("rejects a concurrent managed update", async () => {
@@ -752,7 +784,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 		}
 	});
 
-	it("uses the current package name when the update check omits packageName", async () => {
+	it("self-updates from this fork's GitHub releases without contacting upstream pi.dev", async () => {
 		const globalPrefix = join(tempDir, "global-prefix");
 		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
 		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
@@ -775,7 +807,7 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 			configurable: true,
 		});
 		const targetVersion = getNewerPatchVersion();
-		const fetchMock = vi.fn(async () => Response.json({ version: targetVersion }));
+		const fetchMock = vi.fn(async () => Response.json({ tag_name: `v${targetVersion}` }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -784,70 +816,31 @@ else fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(args));
 		try {
 			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
 
-			expect(process.exitCode).toBeUndefined();
-			expect(errorSpy).not.toHaveBeenCalled();
-			expect(fetchMock).toHaveBeenCalledOnce();
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			const recordedArgs = JSON.parse(readFileSync(recordPath, "utf-8")) as string[];
-			expect(recordedArgs).toContain(`${PACKAGE_NAME}@${targetVersion}`);
-			expect(recordedArgs).not.toContain(PACKAGE_NAME);
-			expect(stdout).toContain(`Updated pi from ${VERSION} to ${targetVersion}`);
+			const requestedUrls = fetchMock.mock.calls.map(([input]) => String(input));
+			expect(requestedUrls.some((url) => url.includes("pi.dev"))).toBe(false);
+			const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+				.map(([message]) => String(message))
+				.join("\n");
+			const installed =
+				existsSync(recordPath) &&
+				(JSON.parse(readFileSync(recordPath, "utf-8")) as string[]).some((entry) =>
+					entry.includes(targetVersion),
+				);
+			const guided = output.includes("xhqing/pi");
+			// Issue #4 allows either pointing pi update at the fork's own source
+			// (an install runs) or disabling it with fork guidance (no install).
+			expect(installed || guided).toBe(true);
 		} finally {
 			logSpy.mockRestore();
 			errorSpy.mockRestore();
 		}
 	});
 
-	it("installs the active package name from the update check during self-update", async () => {
-		const globalPrefix = join(tempDir, "global-prefix");
-		const selfPackageDir = join(globalPrefix, "lib", "node_modules", "@mariozechner", "pi-coding-agent");
-		const fakeNpmPath = join(tempDir, "fake-npm.cjs");
-		const recordPath = join(tempDir, "self-update.json");
-		mkdirSync(selfPackageDir, { recursive: true });
-		writeFileSync(
-			fakeNpmPath,
-			`const fs=require("node:fs"),path=require("node:path"),args=process.argv.slice(2),prefix=args[args.indexOf("--prefix")+1];
-if(args.includes("root")) console.log(path.join(prefix,"lib","node_modules"));
-else {
-	const records=fs.existsSync(${JSON.stringify(recordPath)})?JSON.parse(fs.readFileSync(${JSON.stringify(recordPath)},"utf-8")):[];
-	records.push(args);
-	fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(records));
-}
-`,
-		);
-		writeFileSync(
-			join(agentDir, "settings.json"),
-			JSON.stringify({ npmCommand: [originalExecPath, fakeNpmPath, "--prefix", globalPrefix] }, null, 2),
-		);
-		process.env.PI_PACKAGE_DIR = selfPackageDir;
-		Object.defineProperty(process, "execPath", {
-			value: join(selfPackageDir, "dist", "cli.js"),
-			configurable: true,
-		});
-		const activePackageName = PACKAGE_NAME === "@new-scope/pi" ? "@newer-scope/pi" : "@new-scope/pi";
-		vi.stubGlobal(
-			"fetch",
-			vi.fn(async () => Response.json({ packageName: activePackageName, version: "0.73.0" })),
-		);
-
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-		try {
-			await expect(runPackageCommandDirectly(["update", "--self"])).resolves.toBeUndefined();
-
-			expect(process.exitCode).toBeUndefined();
-			expect(errorSpy).not.toHaveBeenCalled();
-			const recordedCalls = JSON.parse(readFileSync(recordPath, "utf-8")) as string[][];
-			expect(recordedCalls).toEqual([
-				expect.arrayContaining(["uninstall", "-g", PACKAGE_NAME]),
-				expect.arrayContaining(["install", "-g", `${activePackageName}@0.73.0`]),
-			]);
-		} finally {
-			logSpy.mockRestore();
-			errorSpy.mockRestore();
-		}
-	});
+	// Issue #4: the version check now reads this fork's GitHub Releases, which
+	// have no packageName field, so the renamed-package self-update cases
+	// ("installs the active package name...", "fails self-update when renamed
+	// npm package installation fails") were removed: upstream's package
+	// migration flow cannot trigger from fork release payloads.
 
 	it("prints a pnpm metadata hint when self-update fails", async () => {
 		const globalRoot = join(tempDir, "pnpm", "global", "v11");
@@ -871,7 +864,7 @@ else {
 		});
 		vi.stubGlobal(
 			"fetch",
-			vi.fn(async () => Response.json({ version: getNewerPatchVersion() })),
+			vi.fn(async () => Response.json({ tag_name: `v${getNewerPatchVersion()}` })),
 		);
 
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
