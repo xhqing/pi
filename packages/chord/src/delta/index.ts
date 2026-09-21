@@ -149,11 +149,19 @@ const MUTATORS = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "
 const MISSING = Symbol("missing");
 type MaybeJson = JsonValue | typeof MISSING;
 
+// ~10k spread args sit right at the V8 call-stack limit on some platforms
+// (macOS / Node 22: RangeError in the large-append delta test, see #2);
+// 4k keeps headroom. Shared by the tracker (spliceItems) and apply paths.
+const SPLICE_CHUNK_SIZE = 4_096;
+
 const spliceItems = (target: unknown[], index: number, remove: number, items: JsonValue[]): JsonValue[] => {
 	const removed = Reflect.apply(Array.prototype.splice, target, [index, remove]) as JsonValue[];
-	const chunkSize = 10_000;
-	for (let offset = 0; offset < items.length; offset += chunkSize) {
-		Reflect.apply(Array.prototype.splice, target, [index + offset, 0, ...items.slice(offset, offset + chunkSize)]);
+	for (let offset = 0; offset < items.length; offset += SPLICE_CHUNK_SIZE) {
+		Reflect.apply(Array.prototype.splice, target, [
+			index + offset,
+			0,
+			...items.slice(offset, offset + SPLICE_CHUNK_SIZE),
+		]);
 	}
 	return removed;
 };
@@ -1644,9 +1652,8 @@ function applyOps<T>(target: T | undefined, ops: readonly Op[]): T {
 			const target_ = path.length === 0 ? root : resolve(root, path);
 			if (!Array.isArray(target_)) throw new PathError(path);
 			target_.splice(op[2], op[3]);
-			const chunkSize = 10_000;
-			for (let offset = 0; offset < op[4].length; offset += chunkSize) {
-				target_.splice(op[2] + offset, 0, ...op[4].slice(offset, offset + chunkSize));
+			for (let offset = 0; offset < op[4].length; offset += SPLICE_CHUNK_SIZE) {
+				target_.splice(op[2] + offset, 0, ...op[4].slice(offset, offset + SPLICE_CHUNK_SIZE));
 			}
 			continue;
 		}
