@@ -2,16 +2,26 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- `LatestPiRelease` no longer carries `packageName` or `note`: the update check now reads this fork's GitHub Releases, whose payloads have neither field, so upstream's package-migration flow (`pi update --self` installing a renamed npm package) is unreachable and has been removed along with the self-update note rendering ([#4](https://github.com/xhqing/pi/issues/4)).
+
 ### Added
 
 - Self-contained npm-layout release tarball: `scripts/build-npm-tarball.mjs` packs the bundle with the TUI native prebuilds beside it and drops workspace dependencies that are not published to npm, so the tarball installs cleanly with `npm install -g <tarball>` (fixes the broken clipboard image paste that resulted from installing an npm-layout package without native prebuilds).
 - Bilingual README: added `README_cn.md` (Chinese, authoritative) alongside the English `README.md`, with cross-links.
+- Fork self-update install source: `getForkReleaseTarballUrl()` builds the GitHub Release tarball URL (`pi-coding-agent-<version>.tgz`) that `pi update --self` now installs for npm/pnpm/yarn/bun global installs, so updates pull the fork's own build instead of the upstream npm package; the release workflow (`build-binaries.sh` + `build-binaries.yml`) builds and ships that tarball asset ([#4](https://github.com/xhqing/pi/issues/4)).
 
 ### Changed
 
 - Repository is now a standalone fork: `xhqing/pi` was detached from the earendil-works/pi fork network on GitHub (2026-09-19) and evolves independently. Updated the project guidance (`CLAUDE.md`) to drop all upstream-sync wording (maintenance role, repository positioning, Development Rules upkeep), and removed the local `upstream` git remote.
 - The bundle build now copies the TUI native clipboard/platform prebuilds into `dist/bundle/native` (and fails the build when a prebuild is missing), so npm-layout packages are self-contained.
 - `@earendil-works/chord` is inlined into the bundle instead of staying external; the npm-layout package no longer depends on unpublished workspace packages.
+- Version scheme unified under the repo root `VERSION` file (0.0.3): `packages/coding-agent/package.json` (and the whole internal `@earendil-works/pi-*`/chord workspace family, enforced by the install-lock/shrinkwrap generators) moved from the upstream-inherited 0.86.0 to 0.0.3, so update checks compare against the fork's own releases instead of upstream's 0.86.x line ([#4](https://github.com/xhqing/pi/issues/4)).
+
+### Fixed
+
+- Update check and `pi update` no longer target upstream pi.dev after the fork detach: the startup/self-update version check reads `https://api.github.com/repos/xhqing/pi/releases/latest` (tag comparison, semver-validated, `v` prefix stripped), the interactive update notice links to the fork's releases page, and installer-managed self-updates refuse to run without `PI_INSTALLER_API_BASE` with guidance to the fork's releases instead of silently pulling the upstream installer ([#4](https://github.com/xhqing/pi/issues/4)).
 
 ### Removed
 

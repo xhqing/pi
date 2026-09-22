@@ -183,6 +183,18 @@ for platform in "${PLATFORMS[@]}"; do
     fi
 done
 
+# Build the npm-layout tarball asset consumed by `pi update --self`
+# (see getForkReleaseTarballUrl in
+# packages/coding-agent/src/utils/version-check.ts for the naming convention).
+if [[ "$SKIP_BUILD" == "false" ]]; then
+    echo "==> Building npm-layout tarball..."
+    repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+    version="$(node -p 'require(process.argv[1]).version' "$repo_root/packages/coding-agent/package.json")"
+    (cd "$repo_root" && node scripts/build-npm-tarball.mjs --out "$OUTPUT_DIR")
+    mv "$OUTPUT_DIR/earendil-works-pi-coding-agent-${version}.tgz" \
+        "$OUTPUT_DIR/pi-coding-agent-${version}.tgz"
+fi
+
 echo ""
 echo "==> Build complete!"
 echo "Archives available in $OUTPUT_DIR/"

@@ -9,7 +9,6 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
-import { Markdown, type MarkdownTheme } from "@earendil-works/pi-tui";
 import chalk from "chalk";
 import lockfile from "proper-lockfile";
 import { selectConfig } from "./cli/config-selector.ts";
@@ -37,7 +36,13 @@ import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/tru
 import { spawnProcess, spawnProcessSync, waitForChildProcess } from "./utils/child-process.ts";
 import { canonicalizePath, getCwdRelativePath } from "./utils/paths.ts";
 import { getPiUserAgent } from "./utils/pi-user-agent.ts";
-import { formatVersionCheckError, getLatestPiRelease, isNewerPackageVersion } from "./utils/version-check.ts";
+import {
+	FORK_RELEASES_URL,
+	formatVersionCheckError,
+	getForkReleaseTarballUrl,
+	getLatestPiRelease,
+	isNewerPackageVersion,
+} from "./utils/version-check.ts";
 import {
 	cleanupWindowsSelfUpdateQuarantine,
 	quarantineWindowsNativeDependencies,
@@ -47,9 +52,19 @@ export type PackageCommand = "install" | "remove" | "update" | "list";
 
 type UpdateTarget = { type: "all" } | { type: "self" } | { type: "extensions"; source?: string } | { type: "models" };
 
-const DEFAULT_INSTALLER_API_BASE = "https://pi.dev/api/installer/releases";
 const MANAGED_INSTALL_MARKER = "managed-install.json";
 const MANAGED_RELEASE_VERSION_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
+/**
+ * Resolve the installer API base for managed updates. Unlike upstream, this
+ * fork has no default installer API: without PI_INSTALLER_API_BASE the
+ * upstream pi.dev endpoint must not be contacted, so managed self-updates are
+ * disabled and the user is pointed at the fork's own releases instead.
+ */
+function getInstallerApiBase(): string | undefined {
+	const configured = process.env.PI_INSTALLER_API_BASE?.trim();
+	return configured ? configured.replace(/\/+$/, "") : undefined;
+}
 
 function getActiveManagedInstallRoot(): string | undefined {
 	const configuredRoot = process.env.PI_MANAGED_INSTALL_ROOT?.trim();
@@ -173,6 +188,13 @@ async function runManagedSelfUpdate(managedRoot: string, version: string): Promi
 		throw new Error(`Invalid managed release version: ${version}`);
 	}
 
+	const installerApiBase = getInstallerApiBase();
+	if (!installerApiBase) {
+		throw new Error(
+			`Installer-managed updates need PI_INSTALLER_API_BASE; this fork (xhqing/pi) does not run the upstream installer API. Update from the fork's releases at ${FORK_RELEASES_URL} instead.`,
+		);
+	}
+
 	let releaseLock: () => Promise<void>;
 	try {
 		releaseLock = await lockfile.lock(join(managedRoot, "update"), { realpath: false });
@@ -186,10 +208,6 @@ async function runManagedSelfUpdate(managedRoot: string, version: string): Promi
 	let stageDir: string | undefined;
 	try {
 		cleanupManagedStaging(managedRoot);
-		const installerApiBase = (process.env.PI_INSTALLER_API_BASE?.trim() || DEFAULT_INSTALLER_API_BASE).replace(
-			/\/+$/,
-			"",
-		);
 		const releaseUrl = `${installerApiBase}/${encodeURIComponent(version)}`;
 		const stagingRoot = join(managedRoot, "staging");
 		const releasesRoot = join(managedRoot, "releases");
@@ -219,23 +237,6 @@ async function runManagedSelfUpdate(managedRoot: string, version: string): Promi
 		await releaseLock();
 	}
 }
-
-const SELF_UPDATE_NOTE_MARKDOWN_THEME: MarkdownTheme = {
-	heading: (text) => chalk.bold(chalk.yellow(text)),
-	link: (text) => chalk.cyan(text),
-	linkUrl: (text) => chalk.dim(text),
-	code: (text) => chalk.yellow(text),
-	codeBlock: (text) => chalk.dim(text),
-	codeBlockBorder: (text) => chalk.dim(text),
-	quote: (text) => chalk.dim(text),
-	quoteBorder: (text) => chalk.dim(text),
-	hr: (text) => chalk.dim(text),
-	listBullet: (text) => chalk.yellow(text),
-	bold: (text) => chalk.bold(text),
-	italic: (text) => chalk.italic(text),
-	strikethrough: (text) => chalk.strikethrough(text),
-	underline: (text) => chalk.underline(text),
-};
 
 interface PackageCommandOptions {
 	command: PackageCommand;
@@ -631,32 +632,10 @@ function printPnpmSelfUpdateMetadataHint(): void {
 	console.error(chalk.yellow(`Run \`pnpm store prune\` and retry \`${APP_NAME} update --self\`.`));
 }
 
-function printSelfUpdateNote(note: string): void {
-	const trimmedNote = note.trim();
-	if (!trimmedNote) {
-		return;
-	}
-
-	console.log();
-	console.log(chalk.bold(chalk.yellow("Update note")));
-	try {
-		const width = Math.max(20, process.stdout.columns ?? 80);
-		const renderedLines = new Markdown(trimmedNote, 0, 0, SELF_UPDATE_NOTE_MARKDOWN_THEME)
-			.render(width)
-			.map((line) => line.trimEnd());
-		console.log(renderedLines.join("\n"));
-	} catch {
-		console.log(trimmedNote);
-	}
-	console.log();
-}
-
 interface SelfUpdatePlan {
-	packageName: string;
 	installSpec: string;
 	version: string;
 	shouldRun: boolean;
-	note?: string;
 }
 
 async function getSelfUpdatePlan(force: boolean): Promise<SelfUpdatePlan> {
@@ -672,20 +651,20 @@ async function getSelfUpdatePlan(force: boolean): Promise<SelfUpdatePlan> {
 		throw new Error(`Could not determine latest ${APP_NAME} version.`);
 	}
 
-	const packageName = latestRelease.packageName ?? PACKAGE_NAME;
-	const installSpec = `${packageName}@${latestRelease.version}`;
-	if (force || packageName !== PACKAGE_NAME || isNewerPackageVersion(latestRelease.version, VERSION)) {
+	// The fork is not published to the npm registry, so a registry spec would
+	// install the upstream package over this fork install. Always install the
+	// fork's own release tarball instead.
+	const installSpec = getForkReleaseTarballUrl(latestRelease.version);
+	if (force || isNewerPackageVersion(latestRelease.version, VERSION)) {
 		return {
-			packageName,
 			installSpec,
 			version: latestRelease.version,
-			...(latestRelease.note ? { note: latestRelease.note } : {}),
 			shouldRun: true,
 		};
 	}
 
 	console.log(chalk.green(`${APP_NAME} is already up to date (v${VERSION})`));
-	return { packageName, installSpec, version: latestRelease.version, shouldRun: false };
+	return { installSpec, version: latestRelease.version, shouldRun: false };
 }
 
 async function runSelfUpdate(command: SelfUpdateCommand): Promise<void> {
@@ -1035,9 +1014,6 @@ export async function handlePackageCommand(
 						return true;
 					}
 					if (managedInstallRoot) {
-						if (selfUpdatePlan.note) {
-							printSelfUpdateNote(selfUpdatePlan.note);
-						}
 						try {
 							console.log(chalk.dim(`Updating managed ${APP_NAME} installation...`));
 							await runManagedSelfUpdate(managedInstallRoot, selfUpdatePlan.version);
@@ -1061,7 +1037,7 @@ export async function handlePackageCommand(
 						return true;
 					}
 					const selfUpdateTarget = {
-						packageName: selfUpdatePlan.packageName,
+						packageName: PACKAGE_NAME,
 						installSpec: selfUpdatePlan.installSpec,
 					};
 					const selfUpdateCommand = getSelfUpdateCommand(PACKAGE_NAME, selfUpdateNpmCommand, selfUpdateTarget);
@@ -1069,9 +1045,6 @@ export async function handlePackageCommand(
 						printSelfUpdateUnavailable(selfUpdateNpmCommand, selfUpdateTarget);
 						process.exitCode = 1;
 						return true;
-					}
-					if (selfUpdatePlan.note) {
-						printSelfUpdateNote(selfUpdatePlan.note);
 					}
 					try {
 						if (installMethod === "npm") {
