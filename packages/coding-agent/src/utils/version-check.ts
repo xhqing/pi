@@ -2,13 +2,27 @@ import { compare, valid } from "semver";
 import { fetchWithRetry } from "./management-http.ts";
 import { getPiUserAgent } from "./pi-user-agent.ts";
 
-const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
+// This repo is an independent fork, detached from earendil-works/pi on
+// 2026-09-19. Update checks therefore read this fork's own GitHub Releases
+// (xhqing/pi), never the upstream pi.dev endpoints, so update notices only
+// appear for fork releases and can never suggest installing upstream builds.
+const LATEST_VERSION_URL = "https://api.github.com/repos/xhqing/pi/releases/latest";
+export const FORK_RELEASES_URL = "https://github.com/xhqing/pi";
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
 export interface LatestPiRelease {
 	version: string;
-	packageName?: string;
-	note?: string;
+}
+
+/**
+ * Tarball asset URL for a fork release. `pi update --self` installs this
+ * tarball instead of an npm registry spec, because the fork is not published
+ * to the registry and a registry spec would pull the upstream package over
+ * the fork install. The asset name matches the release workflow
+ * (pi-coding-agent-<version>.tgz, built by scripts/build-npm-tarball.mjs).
+ */
+export function getForkReleaseTarballUrl(version: string): string {
+	return `${FORK_RELEASES_URL}/releases/download/v${version}/pi-coding-agent-${version}.tgz`;
 }
 
 /** Include useful errno details hidden behind Node's generic "fetch failed" error. */
@@ -69,22 +83,18 @@ export async function getLatestPiRelease(
 	);
 	if (!response.ok) return undefined;
 
+	// GitHub's release payload exposes the version as the `tag_name` field
+	// (e.g. "v1.2.3"). Strip the leading "v" and require a valid semver string
+	// so a malformed tag can never surface as an update notice.
 	const data = (await response.json()) as {
-		packageName?: unknown;
-		version?: unknown;
-		note?: unknown;
+		tag_name?: unknown;
 	};
-	if (typeof data.version !== "string" || !data.version.trim()) {
+	if (typeof data.tag_name !== "string" || !data.tag_name.trim()) {
 		return undefined;
 	}
-	const packageName =
-		typeof data.packageName === "string" && data.packageName.trim() ? data.packageName.trim() : undefined;
-	const note = typeof data.note === "string" && data.note.trim() ? data.note.trim() : undefined;
-	return {
-		version: data.version.trim(),
-		packageName,
-		...(note ? { note } : {}),
-	};
+	const version = data.tag_name.trim().replace(/^v/, "");
+	if (!valid(version)) return undefined;
+	return { version };
 }
 
 export async function getLatestPiVersion(

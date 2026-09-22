@@ -104,6 +104,7 @@ jobs:
           done
 
           cp "${binary_assets[@]}" "${GITHUB_WORKSPACE}/release-assets/"
+          cp "pi-coding-agent-${VERSION}.tgz" "${GITHUB_WORKSPACE}/release-assets/"
 
           cd "${GITHUB_WORKSPACE}/release-assets"
           source_asset="pi-${VERSION}-source.tar.gz"
@@ -115,6 +116,7 @@ jobs:
             pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
+            pi-coding-agent-${VERSION}.tgz
             pi-coding-agent-install-package.json
             pi-coding-agent-install-package-lock.json
           )
@@ -233,6 +235,7 @@ jobs:
             pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
+            pi-coding-agent-${VERSION}.tgz
             pi-coding-agent-install-package.json
             pi-coding-agent-install-package-lock.json
             SHA256SUMS
@@ -263,6 +266,7 @@ jobs:
             pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
+            pi-coding-agent-${VERSION}.tgz
             pi-coding-agent-install-package.json
             pi-coding-agent-install-package-lock.json
             SHA256SUMS

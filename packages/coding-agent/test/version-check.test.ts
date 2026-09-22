@@ -44,7 +44,9 @@ describe("version checks", () => {
 	});
 
 	it("checks this fork's GitHub releases instead of upstream pi.dev", async () => {
-		const fetchMock = vi.fn(async () => Response.json({ tag_name: "v1.2.4" }));
+		const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) =>
+			Response.json({ tag_name: "v1.2.4" }),
+		);
 		vi.stubGlobal("fetch", fetchMock);
 
 		const release = await getLatestPiRelease("1.2.3");
