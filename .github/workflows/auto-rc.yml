@@ -167,6 +167,10 @@ jobs:
         if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           set -euo pipefail
+          # Annotated tags need a committer identity; runners have none by default
+          # (run 35712627220 died here with "Committer identity unknown").
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           TAG="${{ steps.ver.outputs.tag }}"
           PREV="${{ steps.changes.outputs.prev }}"
           RANGE="${PREV:+$PREV..}HEAD"
