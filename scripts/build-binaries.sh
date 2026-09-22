@@ -25,6 +25,10 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+# Resolve the repo root once, while $0's relative path is still valid -- later
+# steps cd into the output directory and re-resolving via dirname "$0" there
+# would point inside it (broke the auto-rc workflow's relative invocation).
+repo_root="$(pwd)"
 
 SKIP_INSTALL=false
 SKIP_BUILD=false
@@ -188,7 +192,6 @@ done
 # packages/coding-agent/src/utils/version-check.ts for the naming convention).
 if [[ "$SKIP_BUILD" == "false" ]]; then
     echo "==> Building npm-layout tarball..."
-    repo_root="$(cd "$(dirname "$0")/.." && pwd)"
     version="$(node -p 'require(process.argv[1]).version' "$repo_root/packages/coding-agent/package.json")"
     (cd "$repo_root" && node scripts/build-npm-tarball.mjs --out "$OUTPUT_DIR")
     mv "$OUTPUT_DIR/earendil-works-pi-coding-agent-${version}.tgz" \
