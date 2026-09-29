@@ -24,6 +24,7 @@
 ### Fixed
 
 - Update check and `pi update` no longer target upstream pi.dev after the fork detach: the startup/self-update version check reads `https://api.github.com/repos/xhqing/pi/releases/latest` (tag comparison, semver-validated, `v` prefix stripped), the interactive update notice links to the fork's releases page, and installer-managed self-updates refuse to run without `PI_INSTALLER_API_BASE` with guidance to the fork's releases instead of silently pulling the upstream installer ([#4](https://github.com/xhqing/pi/issues/4)).
+- Fixed the Together default model pointing at the removed Kimi K2.6 model; it now defaults to Kimi K3, and the `packages/ai` Together test references were refreshed to Kimi K3 so the hydrated-catalog type checks pass again.
 
 ### Removed
 
