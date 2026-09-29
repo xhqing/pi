@@ -1,34 +1,34 @@
-# Auto prerelease (auto-rc): when the main-branch "CI" workflow completes green,
-# automatically tag v<target>-rc.N and publish a --prerelease GitHub Release with
-# the full binary set. Users install rc builds for acceptance testing; stable
-# releases stay manual (/bump + /release by the maintainer).
+# Prerelease (manual): cut a v<target>-rc.N prerelease with the full CI-built
+# binary set on demand. Nothing here runs automatically -- trigger it yourself
+# when you want an rc:
 #
-# Requirements: ci.yml must keep its push(main) trigger and the workflow name
-# "CI" (workflow_run associates by name); this definition only takes effect on
-# the default branch.
+#   gh workflow run prerelease.yml                  # from main (post-merge rc)
+#   gh workflow run prerelease.yml --ref <branch>   # from a branch (pre-merge snapshot)
+#
+# or use the Actions UI ("Run workflow"). Manual-only by design (2026-09-29, at
+# the maintainer's request): publishing an rc automatically on every green main
+# CI was noise -- most changes ship straight to a stable release, and small
+# changes do not warrant the rc ceremony. Stable releases are cut with the
+# maintainer's release flow; this workflow exists so an on-demand rc gets the
+# same six-platform binary set without a local build.
 #
 # Version scheme: target version = the root VERSION value while v<VERSION> has
 # not been released yet, otherwise VERSION patch+1 (rc numbering lives purely in
 # tags; version files are never bumped here -- that is /bump's job).
-name: auto-rc
+name: prerelease
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write # push tag + create release
 
 concurrency:
-  group: auto-rc
+  group: prerelease
   cancel-in-progress: false # serialize; prevents rc number races
 
 jobs:
-  release-candidate:
-    # Only on green CI: no rc when main CI fails or is cancelled.
-    if: github.event.workflow_run.conclusion == 'success'
+  prerelease:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -37,48 +37,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
           fetch-depth: 0 # full history: rc numbering and notes need tag history
           fetch-tags: true
           persist-credentials: false
 
-      - name: Skip superseded runs
-        id: fresh
-        run: |
-          set -euo pipefail
-          # While queued behind the concurrency group, main may have moved on;
-          # only the run matching current origin/main publishes an rc.
-          TRIGGER_SHA="${{ github.event.workflow_run.head_sha }}"
-          if [ "$(git rev-parse origin/main)" != "$TRIGGER_SHA" ]; then
-            echo "fresh=false" >> "$GITHUB_OUTPUT"
-            echo "main moved on; skipping (the newer run will publish)"
-          else
-            echo "fresh=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Inspect changes since last tagged state
-        if: steps.fresh.outputs.fresh == 'true'
+      - name: Resolve previous tag
         id: changes
         run: |
           set -euo pipefail
           PREV="$(git describe --tags --abbrev=0 2>/dev/null || true)"
-          RANGE="${PREV:+$PREV..}HEAD"
-          SUBJECTS="$(git log --format='%s' "$RANGE")"
-          # Docs-only main states (every subject since the last tag starts with
-          # docs:/docs(scope):) do not change runtime behavior -- skip them so
-          # each rc carries something installable to test.
-          if [ -n "$SUBJECTS" ] && ! grep -qvE '^docs(\([^)]*\))?(!)?:' <<<"$SUBJECTS"; then
-            DOCS_ONLY=true
-          else
-            DOCS_ONLY=false
-          fi
-          {
-            echo "prev=${PREV}"
-            echo "docs_only=${DOCS_ONLY}"
-          } >> "$GITHUB_OUTPUT"
+          echo "prev=${PREV}" >> "$GITHUB_OUTPUT"
 
       - name: Derive next rc tag
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         id: ver
         run: |
           set -euo pipefail
@@ -99,38 +69,32 @@ jobs:
           echo "tag=v$TARGET-rc.$N" >> "$GITHUB_OUTPUT"
 
       - name: Setup Bun
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.3.14
 
       - name: Setup Node.js
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
           cache: npm
 
       - name: Install system dependencies
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           sudo apt-get update
           sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev fd-find ripgrep
           sudo ln -s $(which fdfind) /usr/local/bin/fd
 
       - name: Install dependencies and hydrate model data
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           npm ci --ignore-scripts
           npm run hydrate:model-data
 
       - name: Build binaries and npm-layout tarball
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           ./scripts/build-binaries.sh --skip-install --offline-model-data --out binaries
 
       - name: Smoke-test linux-x64 binary
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           set -euo pipefail
           mkdir -p smoke
@@ -139,7 +103,6 @@ jobs:
           smoke/pi/pi --help > /dev/null
 
       - name: Assemble release payload
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -164,7 +127,6 @@ jobs:
           )
 
       - name: Tag and publish prerelease
-        if: steps.fresh.outputs.fresh == 'true' && steps.changes.outputs.docs_only == 'false'
         run: |
           set -euo pipefail
           # Annotated tags need a committer identity; runners have none by default
@@ -175,14 +137,14 @@ jobs:
           PREV="${{ steps.changes.outputs.prev }}"
           RANGE="${PREV:+$PREV..}HEAD"
           {
-            echo "Automated prerelease cut from main after CI passed. For early testing only; stable releases are published separately."
+            echo "Prerelease cut manually from ${GITHUB_REF_NAME} for early testing; stable releases are published separately."
             echo
             echo "## Commits since ${PREV:-repository start}"
             echo '```'
             git log --oneline "$RANGE"
             echo '```'
           } > notes.md
-          git tag -a "$TAG" -m "$TAG (auto prerelease from main)"
+          git tag -a "$TAG" -m "$TAG (prerelease from ${GITHUB_REF_NAME})"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
           gh release create "$TAG" --prerelease \
             --title "${GITHUB_REPOSITORY#*/} $TAG" \

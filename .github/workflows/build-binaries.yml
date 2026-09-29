@@ -2,9 +2,10 @@ name: Build Binaries
 
 # Fork note (2026-09-22): the upstream tag-push trigger is removed. This
 # workflow's publish chain (npm trusted publishing, pi.dev announcement) has no
-# credentials in this fork and would always fail; prerelease tags now come from
-# auto-rc.yml and stable releases are cut locally via the maintainer's release
-# flow. Retained for manual workflow_dispatch recovery builds only.
+# credentials in this fork and would always fail; prereleases are now cut on
+# demand with .github/workflows/prerelease.yml and stable releases with the
+# maintainer's release flow. Retained for manual workflow_dispatch recovery
+# builds only.
 on:
   workflow_dispatch:
     inputs:

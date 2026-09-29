@@ -4,6 +4,12 @@ Root-level changelog and version baseline for the standalone fork. The root vers
 
 ## [Unreleased]
 
+### Changed
+
+- `.github/workflows/auto-rc.yml` → `.github/workflows/prerelease.yml`: prereleases are now cut on demand (`workflow_dispatch`) instead of automatically whenever main CI went green. Why: an rc on every merge to main was noise — most changes ship straight to a stable release and small changes do not warrant the rc ceremony — while an on-demand path is still wanted; the pipeline was therefore renamed and kept rather than deleted, and it builds the same six-platform binary set on request (`gh workflow run prerelease.yml`, optionally `--ref <branch>` for a pre-merge snapshot). The `workflow_run`-specific steps (skip-superseded-runs, docs-only skip) were dropped: on a manual dispatch the maintainer has already decided.
+- `scripts/build-binaries.sh` and `.github/workflows/build-binaries.yml`: comments no longer reference the removed auto-rc pipeline (the build script's `repo_root` note now describes the relative-`--out` callers that broke).
+- `TODO.md` / `TODO-archive.md`: archived **T4** as updated — the v0.0.3 stable release resolved its `releases/latest` pollution half (the pointer now serves v0.0.3); registered **T5** for the remaining update-chain gaps (prereleases never reach `latest`, so `pi update --self` cannot fetch an rc build; same-version re-releases need `--force`); also archived **T1** as completed — the chord `spliceItems` chunk-size fix (10,000 → 4,096, shipped in 0.0.3 via #2) restored the delta test suite to green (155/155 locally).
+
 ## [0.0.3] - 2026-09-29
 
 First stable release of the standalone fork (the 0.0.3 baseline came from the root `pi-monorepo` package.json): the repository was detached from the upstream fork network, versioning was unified under the root `VERSION` file, update checks and self-updates now target the fork's own GitHub Releases, and an automated rc prerelease pipeline was added.
