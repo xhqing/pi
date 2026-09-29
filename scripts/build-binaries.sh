@@ -27,7 +27,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 # Resolve the repo root once, while $0's relative path is still valid -- later
 # steps cd into the output directory and re-resolving via dirname "$0" there
-# would point inside it (broke the auto-rc workflow's relative invocation).
+# would point inside it (broke callers that pass a relative --out, e.g. the
+# prerelease workflow and local release runs).
 repo_root="$(pwd)"
 
 SKIP_INSTALL=false
