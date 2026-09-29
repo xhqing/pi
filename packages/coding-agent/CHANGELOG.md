@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-09-29
+
 ### Breaking Changes
 
 - `LatestPiRelease` no longer carries `packageName` or `note`: the update check now reads this fork's GitHub Releases, whose payloads have neither field, so upstream's package-migration flow (`pi update --self` installing a renamed npm package) is unreachable and has been removed along with the self-update note rendering ([#4](https://github.com/xhqing/pi/issues/4)).
