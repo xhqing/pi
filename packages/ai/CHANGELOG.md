@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed stale test fixtures against the refreshed models.dev catalog: the Together fixture referenced `deepseek-ai/DeepSeek-V4-Pro`, removed from the hydrated catalog (now `deepseek-ai/DeepSeek-V4-Pro-0813`, with `thinkingLevelMap` lacking `high`/`xhigh` and `supportsReasoningEffort: false`), and the moonshotai / moonshotai-cn Kimi K3 `cacheWrite` price is now `3` instead of `0`. Both fixtures broke CI (type check or tests).
+
 ## [0.86.0] - 2026-09-19
 
 ### Added
