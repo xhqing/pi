@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the Together model test fixture referencing `deepseek-ai/DeepSeek-V4-Pro`: models.dev no longer lists that model in the hydrated catalog, so the CI type checks failed (`TS2345`). The fixture now targets the current `deepseek-ai/DeepSeek-V4-Pro-0813` with its reasoning controls (`thinkingLevelMap` without `high`/`xhigh`, `supportsReasoningEffort: false`).
+
 ## [0.86.0] - 2026-09-19
 
 ### Added
