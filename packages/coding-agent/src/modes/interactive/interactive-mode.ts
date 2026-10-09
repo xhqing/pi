@@ -1669,6 +1669,24 @@ export class InteractiveMode {
 			}
 			return theme.fg("dim", `  ${labels.join(", ")}`);
 		};
+		const formatGroupedCompactList = (
+			groups: Array<{
+				scope: "user" | "project" | "path";
+				paths: Array<{ path: string; sourceInfo?: SourceInfo }>;
+				packages: Map<string, Array<{ path: string; sourceInfo?: SourceInfo }>>;
+			}>,
+			formatName: (item: { path: string; sourceInfo?: SourceInfo }) => string,
+		): string => {
+			const lines = groups.map((group) => {
+				const names = [
+					...group.paths.map((item) => formatName(item)),
+					...Array.from(group.packages.values()).flatMap((items) => items.map((item) => formatName(item))),
+				].filter((name) => name.length > 0);
+				names.sort((a, b) => a.localeCompare(b));
+				return `  ${group.scope}: ${names.join(", ")}`;
+			});
+			return theme.fg("dim", lines.join("\n"));
+		};
 		const addLoadedSection = (
 			name: string,
 			collapsedBody: string,
@@ -1748,7 +1766,10 @@ export class InteractiveMode {
 					formatPath: (item) => this.formatDisplayPath(item.path),
 					formatPackagePath: (item) => this.getShortPath(item.path, item.sourceInfo),
 				});
-				const skillCompactList = formatCompactList(skills.map((skill) => skill.name));
+				const skillCompactList = formatGroupedCompactList(
+					groups,
+					(item) => skills.find((skill) => skill.filePath === item.path)?.name ?? "",
+				);
 				addLoadedSection("Skills", skillCompactList, skillList);
 			}
 

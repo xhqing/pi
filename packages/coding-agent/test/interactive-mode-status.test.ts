@@ -521,7 +521,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 		systemPromptSource?: { path: string };
 		appendSystemPromptSources?: Array<{ path: string }>;
 		extensions?: ExtensionFixture[];
-		skills?: Array<{ filePath: string; name: string }>;
+		skills?: Array<{ filePath: string; name: string; sourceInfo?: SourceInfo }>;
 		skillDiagnostics?: Array<{ type: "warning" | "error" | "collision"; message: string }>;
 		useRealScopeGroups?: boolean;
 	}) {
@@ -585,6 +585,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 			formatDiagnostics: () => "diagnostics",
 			getBuiltInCommandConflictDiagnostics: () => [],
 		};
+
+		// Prototype-chained so prototype helpers used by the code under test stay callable.
+		Object.setPrototypeOf(fakeThis, (InteractiveMode as any).prototype);
 
 		if (options.useRealScopeGroups) {
 			fakeThis.getScopeGroup = (sourceInfo?: SourceInfo) =>
@@ -703,6 +706,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
 			skills: [{ filePath: "/tmp/skill/SKILL.md", name: "commit" }],
+			useRealScopeGroups: true,
 		});
 
 		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
@@ -1247,5 +1251,189 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const output = renderAll(fakeThis.loadedResourcesContainer);
 		expect(output).toContain("[Skill conflicts]");
 		expect(output).not.toContain("[Skills]");
+	});
+
+	function createGroupedSkillFixtures(): Array<{ filePath: string; name: string; sourceInfo: SourceInfo }> {
+		return [
+			{
+				filePath: "/tmp/project/.pi/skills/aaa/SKILL.md",
+				name: "zebra",
+				sourceInfo: createSourceInfo("/tmp/project/.pi/skills/aaa/SKILL.md", {
+					source: "local",
+					scope: "project",
+					origin: "top-level",
+					baseDir: "/tmp/project/.pi/skills",
+				}),
+			},
+			{
+				filePath: "/tmp/project/.pi/skills/zzz/SKILL.md",
+				name: "alpha",
+				sourceInfo: createSourceInfo("/tmp/project/.pi/skills/zzz/SKILL.md", {
+					source: "local",
+					scope: "project",
+					origin: "top-level",
+					baseDir: "/tmp/project/.pi/skills",
+				}),
+			},
+			{
+				filePath: "/tmp/agent/skills/mid/SKILL.md",
+				name: "add",
+				sourceInfo: createSourceInfo("/tmp/agent/skills/mid/SKILL.md", {
+					source: "local",
+					scope: "user",
+					origin: "top-level",
+					baseDir: "/tmp/agent/skills",
+				}),
+			},
+		];
+	}
+
+	// Issue #22: the collapsed [Skills] section lists skills grouped by source scope
+	// (project / user / path), one line per non-empty scope, names sorted alphabetically.
+	test("groups skills by scope in the default compact listing", () => {
+		const fakeThis = createShowLoadedResourcesThis({
+			quietStartup: false,
+			skills: createGroupedSkillFixtures(),
+			useRealScopeGroups: true,
+		});
+
+		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
+			force: false,
+		});
+
+		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
+"[Skills]
+  project: alpha, zebra
+  user: add"`);
+	});
+
+	test("omits empty skill scopes and keeps single-skill scope labels", () => {
+		const filePath = "/tmp/agent/skills/mid/SKILL.md";
+		const fakeThis = createShowLoadedResourcesThis({
+			quietStartup: false,
+			skills: [
+				{
+					filePath,
+					name: "add",
+					sourceInfo: createSourceInfo(filePath, {
+						source: "local",
+						scope: "user",
+						origin: "top-level",
+						baseDir: "/tmp/agent/skills",
+					}),
+				},
+			],
+			useRealScopeGroups: true,
+		});
+
+		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
+			force: false,
+		});
+
+		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
+"[Skills]
+  user: add"`);
+	});
+
+	test("keeps package-sourced skills in their scope groups using plain names", () => {
+		const localPath = "/tmp/project/.pi/skills/local/SKILL.md";
+		const npmPath = "/tmp/project/.pi/npm/node_modules/pi-skill-a/skills/main/SKILL.md";
+		const gitPath = "/tmp/agent/git/github.com/foo/bar/skills/main/SKILL.md";
+		const cliPath = "/tmp/temp/skills/cli/SKILL.md";
+		const fakeThis = createShowLoadedResourcesThis({
+			quietStartup: false,
+			skills: [
+				{
+					filePath: localPath,
+					name: "zz-local",
+					sourceInfo: createSourceInfo(localPath, {
+						source: "local",
+						scope: "project",
+						origin: "top-level",
+						baseDir: "/tmp/project/.pi/skills",
+					}),
+				},
+				{
+					filePath: npmPath,
+					name: "aa-pkg",
+					sourceInfo: createSourceInfo(npmPath, {
+						source: "npm:pi-skill-a",
+						scope: "project",
+						origin: "package",
+						baseDir: "/tmp/project/.pi/npm/node_modules/pi-skill-a",
+					}),
+				},
+				{
+					filePath: gitPath,
+					name: "gg-git",
+					sourceInfo: createSourceInfo(gitPath, {
+						source: "git:github.com/foo/bar",
+						scope: "user",
+						origin: "package",
+						baseDir: "/tmp/agent/git/github.com/foo/bar",
+					}),
+				},
+				{
+					filePath: cliPath,
+					name: "cc-cli",
+					sourceInfo: createSourceInfo(cliPath, {
+						source: "cli",
+						scope: "temporary",
+						origin: "top-level",
+						baseDir: "/tmp/temp",
+					}),
+				},
+			],
+			useRealScopeGroups: true,
+		});
+
+		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
+			force: false,
+		});
+
+		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
+"[Skills]
+  project: aa-pkg, zz-local
+  user: gg-git
+  path: cc-cli"`);
+	});
+
+	test("keeps the expanded skills listing as per-path scope groups", () => {
+		const fakeThis = createShowLoadedResourcesThis({
+			quietStartup: false,
+			toolOutputExpanded: true,
+			skills: createGroupedSkillFixtures(),
+			useRealScopeGroups: true,
+		});
+
+		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
+			force: false,
+		});
+
+		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
+"[Skills]
+  project
+    /tmp/project/.pi/skills/aaa/SKILL.md
+    /tmp/project/.pi/skills/zzz/SKILL.md
+  user
+    /tmp/agent/skills/mid/SKILL.md"`);
+	});
+
+	test("leaves the other compact sections flat while skills are grouped", () => {
+		const fakeThis = createShowLoadedResourcesThis({
+			quietStartup: false,
+			skills: createGroupedSkillFixtures(),
+			extensions: [{ path: "/tmp/extensions/answer.ts" }, { path: "/tmp/extensions/btw.ts" }],
+			useRealScopeGroups: true,
+		});
+
+		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
+			force: false,
+		});
+
+		const output = normalizeRenderedOutput(fakeThis.loadedResourcesContainer);
+		expect(output).toContain("  project: alpha, zebra");
+		expect(output).toContain("  user: add");
+		expect(output).toContain("[Extensions]\n  answer.ts, btw.ts");
 	});
 });

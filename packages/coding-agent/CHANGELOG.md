@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- The default (collapsed) `[Skills]` startup listing now groups skills by source scope — one line per non-empty scope (`project:` / `user:` / `path:`), names sorted alphabetically, package-sourced (`npm:` / `git:`) skills shown under their scope with plain names; the expanded (Ctrl+O / `--verbose`) per-path listing and the other sections' compact lists are unchanged ([#22](https://github.com/xhqing/pi/issues/22)).
+
+- [`packages/coding-agent/test/interactive-mode-status.test.ts`]: new test-first coverage for issue #22 — the default (collapsed) `[Skills]` startup listing must group skills by source scope, one line per scope (`project:` / `user:` / `path:`), with names alphabetically sorted inside each line, empty scopes hidden, single-skill scopes still labelled, and `npm:`/`git:` package skills placed in their scope; the expanded per-path listing and the other sections' compact lists are pinned unchanged ([#22](https://github.com/xhqing/pi/issues/22)).
+
 ## [0.0.3] - 2026-09-29
 
 ### Breaking Changes
