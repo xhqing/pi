@@ -10,6 +10,7 @@ Root-level changelog and version baseline for the standalone fork. The root vers
 - `scripts/build-binaries.sh` and `.github/workflows/build-binaries.yml`: comments no longer reference the removed auto-rc pipeline (the build script's `repo_root` note now describes the relative-`--out` callers that broke).
 - `TODO.md` / `TODO-archive.md`: archived **T4** as updated — the v0.0.3 stable release resolved its `releases/latest` pollution half (the pointer now serves v0.0.3); registered **T5** for the remaining update-chain gaps (prereleases never reach `latest`, so `pi update --self` cannot fetch an rc build; same-version re-releases need `--force`); also archived **T1** as completed — the chord `spliceItems` chunk-size fix (10,000 → 4,096, shipped in 0.0.3 via #2) restored the delta test suite to green (155/155 locally).
 - `CLAUDE.md`: synced the attached Atlas sub-project text — mp4-player is registered as a new Atlas sub-project (added to the projects-in-hand line and the sub-project list). Why: the authoritative FullStackEngineerAgent `CLAUDE.md` was updated, and per the sub-project superset rule the attached copy follows the authoritative text.
+- `CLAUDE.md`: synced the attached Atlas sub-project text again — zcode-cli and cmux-launcher are marked as short-term shelved (projects-in-hand line and sub-project list), following the user's 2026-10-09 decision; no code change.
 
 ## [0.0.3] - 2026-09-29
 
