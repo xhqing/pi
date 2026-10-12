@@ -2,7 +2,12 @@
 
 Root-level changelog and version baseline for the standalone fork. The root version tracks the `pi-monorepo` workspace root; per-package changes continue to be recorded in `packages/*/CHANGELOG.md`. This file was created on 2026-09-20, after the repository was detached from the earendil-works/pi fork network (2026-09-19), to give the now-independent repo a single root version authority.
 
-## [0.0.4] - 2026-10-09
+## [0.0.5] - 2026-10-12
+
+### Changed
+
+- **Agent-exclusive files removed, dev guides migrated to `DEVELOPMENT.md`** (2026-10-12 policy): `CLAUDE.md` and the project-level `.pi/` directory are gone; the project guide, upstream development rules and the `.pi/skills` docs live in `DEVELOPMENT.md` now.
+
 
 ### Changed
 
