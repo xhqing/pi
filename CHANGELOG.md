@@ -2,6 +2,16 @@
 
 Root-level changelog and version baseline for the standalone fork. The root version tracks the `pi-monorepo` workspace root; per-package changes continue to be recorded in `packages/*/CHANGELOG.md`. This file was created on 2026-09-20, after the repository was detached from the earendil-works/pi fork network (2026-09-19), to give the now-independent repo a single root version authority.
 
+## [0.0.6] - 2026-10-15
+
+### Added
+
+- The default (collapsed) `[Extensions]` startup listing now groups extensions by source scope — one line per non-empty scope (`project:` / `user:` / `path:`), names sorted alphabetically, package-sourced extensions shown under their scope with plain names — matching the existing `[Skills]` grouping; the expanded (Ctrl+O / `--verbose`) per-path listing and the other sections' compact lists are unchanged ([#28](https://github.com/xhqing/pi/issues/28)).
+
+### Fixed
+
+- Build and tests are aligned with the refreshed upstream model catalog: the OpenCode Go provider now supports `google-generative-ai` models, `defaultModelPerProvider.nvidia` points at `nvidia/nemotron-3-ultra-550b-a55b`, and stale test model references were updated ([#30](https://github.com/xhqing/pi/issues/30)).
+
 ## [0.0.5] - 2026-10-12
 
 ### Changed
