@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- `defaultModelPerProvider` for `nvidia` now points at `nvidia/nemotron-3-ultra-550b-a55b` after the upstream catalog refresh removed the previous default model ([#30](https://github.com/xhqing/pi/issues/30)).
+
 ## [0.0.4] - 2026-10-09
 
 ### Added
