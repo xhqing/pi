@@ -8,6 +8,9 @@
 
 - [`packages/coding-agent/test/interactive-mode-status.test.ts`]: coverage for issue #28 — the default (collapsed) `[Extensions]` listing must group by source scope (`project:` / `user:` / `path:`), empty scopes hidden, labels kept abbreviated; the expanded per-path listing and the other sections' compact lists stay pinned.
 
+### Fixed
+
+- `defaultModelPerProvider` for `nvidia` now points at `nvidia/nemotron-3-ultra-550b-a55b` after the upstream catalog refresh removed the previous default model ([#30](https://github.com/xhqing/pi/issues/30)).
 ## [0.0.4] - 2026-10-09
 
 ### Added

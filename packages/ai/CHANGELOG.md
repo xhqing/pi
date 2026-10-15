@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- OpenCode Go provider: added `google-generative-ai` support so the provider compiles against the refreshed model catalog; test model references were updated to current catalog IDs (`deepseek-v4.1-flash` on `opencode-go`, `nemotron-3-ultra-550b-a55b` on `nvidia`) ([#30](https://github.com/xhqing/pi/issues/30)).
+
 ## [0.0.4] - 2026-10-09
 
 ### Fixed
