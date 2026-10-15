@@ -2,10 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- The default (collapsed) `[Extensions]` startup listing now groups extensions by source scope — one line per non-empty scope (`project:` / `user:` / `path:`), names sorted alphabetically, package-sourced extensions shown under their scope with plain names; the expanded (Ctrl+O / `--verbose`) per-path listing and the other sections' compact lists are unchanged ([#28](https://github.com/xhqing/pi/issues/28)).
+
+- [`packages/coding-agent/test/interactive-mode-status.test.ts`]: coverage for issue #28 — the default (collapsed) `[Extensions]` listing must group by source scope (`project:` / `user:` / `path:`), empty scopes hidden, labels kept abbreviated; the expanded per-path listing and the other sections' compact lists stay pinned.
+
 ### Fixed
 
 - `defaultModelPerProvider` for `nvidia` now points at `nvidia/nemotron-3-ultra-550b-a55b` after the upstream catalog refresh removed the previous default model ([#30](https://github.com/xhqing/pi/issues/30)).
-
 ## [0.0.4] - 2026-10-09
 
 ### Added

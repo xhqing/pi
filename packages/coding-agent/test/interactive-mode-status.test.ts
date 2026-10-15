@@ -758,15 +758,15 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
 			extensions: [{ path: "/tmp/extensions/answer.ts" }, { path: "/tmp/extensions/btw.ts" }],
+			useRealScopeGroups: true,
 		});
 
 		(InteractiveMode as any).prototype.showLoadedResources.call(fakeThis, {
 			force: false,
 		});
 
-		const output = renderAll(fakeThis.loadedResourcesContainer);
-		expect(output).toContain("[Extensions]");
-		expect(output).toContain("answer.ts, btw.ts");
+		const output = normalizeRenderedOutput(fakeThis.loadedResourcesContainer);
+		expect(output).toContain("[Extensions]\n  project: answer.ts, btw.ts");
 		expect(output).not.toContain("extensions/answer.ts");
 	});
 
@@ -782,8 +782,11 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  @scope/pi-scoped, answer.ts, cli-extension.ts, HazAT/pi-interactive-subagents, HazAT/pi-interactive-subagents:subagents, local-index, pi-markdown-preview, user-index"`);
+			"[Extensions]
+			  project: @scope/pi-scoped, answer.ts, HazAT/pi-interactive-subagents, HazAT/pi-interactive-subagents:subagents, local-index, pi-markdown-preview
+			  user: user-index
+			  path: cli-extension.ts"
+		`);
 	});
 
 	test("adds more parent folders until local extension labels are unique", () => {
@@ -828,8 +831,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  alpha/one, beta/one, gamma/one"`);
+			"[Extensions]
+			  path: alpha/one, beta/one, gamma/one"
+		`);
 	});
 
 	test("strips index.ts from local extension label, showing parent dir", () => {
@@ -856,8 +860,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  plan-mode"`);
+			"[Extensions]
+			  project: plan-mode"
+		`);
 	});
 
 	test("strips index.js from local extension label, showing parent dir", () => {
@@ -884,8 +889,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  plan-mode"`);
+			"[Extensions]
+			  project: plan-mode"
+		`);
 	});
 
 	test("mixed single-file and subdirectory index.ts extensions strip index.ts", () => {
@@ -921,8 +927,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  plan-mode, webfetch.ts"`);
+			"[Extensions]
+			  project: plan-mode, webfetch.ts"
+		`);
 	});
 
 	test("multiple index.ts with unique parent dirs need no disambiguation", () => {
@@ -958,8 +965,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  bar, foo"`);
+			"[Extensions]
+			  project: bar, foo"
+		`);
 	});
 
 	test("multiple index.ts with same parent dir name disambiguated with grandparent", () => {
@@ -995,8 +1003,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  alpha/tools, beta/tools"`);
+			"[Extensions]
+			  path: alpha/tools, beta/tools"
+		`);
 	});
 
 	test("non-index file in subdirectory stays as filename", () => {
@@ -1023,8 +1032,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  main.ts"`);
+			"[Extensions]
+			  project: main.ts"
+		`);
 	});
 
 	test("package extensions still strip index.ts correctly (regression guard)", () => {
@@ -1051,8 +1061,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  pi-markdown-preview"`);
+			"[Extensions]
+			  project: pi-markdown-preview"
+		`);
 	});
 
 	test("labels npm sibling extensions relative to the declaring package", () => {
@@ -1088,8 +1099,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  primary-package, primary-package:../sibling-package"`);
+			"[Extensions]
+			  project: primary-package, primary-package:../sibling-package"
+		`);
 	});
 
 	test("labels Windows npm sibling extensions relative to the declaring package", () => {
@@ -1128,8 +1140,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  primary-package, primary-package:../sibling-package"`);
+			"[Extensions]
+			  user: primary-package, primary-package:../sibling-package"
+		`);
 	});
 
 	test("captures mixed extension layouts in expanded output", () => {
@@ -1419,7 +1432,7 @@ describe("InteractiveMode.showLoadedResources", () => {
     /tmp/agent/skills/mid/SKILL.md"`);
 	});
 
-	test("leaves the other compact sections flat while skills are grouped", () => {
+	test("groups extensions by source alongside grouped skills", () => {
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
 			skills: createGroupedSkillFixtures(),
@@ -1434,6 +1447,6 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const output = normalizeRenderedOutput(fakeThis.loadedResourcesContainer);
 		expect(output).toContain("  project: alpha, zebra");
 		expect(output).toContain("  user: add");
-		expect(output).toContain("[Extensions]\n  answer.ts, btw.ts");
+		expect(output).toContain("[Extensions]\n  project: answer.ts, btw.ts");
 	});
 });

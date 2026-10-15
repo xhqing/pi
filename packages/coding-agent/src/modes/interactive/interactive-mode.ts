@@ -1800,7 +1800,14 @@ export class InteractiveMode {
 					formatPackagePath: (item) =>
 						this.formatExtensionDisplayPath(this.getShortPath(item.path, item.sourceInfo)),
 				});
-				const extensionCompactList = formatCompactList(this.getCompactExtensionLabels(extensions));
+				const extensionCompactLabels = this.getCompactExtensionLabels(extensions);
+				const extensionLabelByPath = new Map(
+					extensions.map((extension, index) => [extension.path, extensionCompactLabels[index]]),
+				);
+				const extensionCompactList = formatGroupedCompactList(
+					groups,
+					(item) => extensionLabelByPath.get(item.path) ?? "",
+				);
 				addLoadedSection("Extensions", extensionCompactList, extList, "mdHeading");
 			}
 
