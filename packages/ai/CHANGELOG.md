@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Test model references and the coding-agent defaults for the Xiaomi providers now use `mimo-v2.6-pro`, matching the refreshed upstream catalog (the previous `mimo-v2.5-pro` was dropped upstream) ([#30](https://github.com/xhqing/pi/issues/30)).
+
 ## [0.0.6] - 2026-10-15
 
 ### Fixed
